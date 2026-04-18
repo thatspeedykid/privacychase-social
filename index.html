@@ -581,6 +581,25 @@ textarea.form-input{resize:none;min-height:80px;}
   </div>
 </div>
 
+<!-- SCAN PC QR (phone scans PC waiting screen) -->
+<div class="overlay" id="modal-scan-pc">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('scan-pc');stopPCScanner()">✕</button>
+    <h2 class="modal-title">Connect to PC</h2>
+    <p class="modal-sub">Point your camera at the QR code shown on your PC screen.</p>
+    <div class="scanner-box"><div id="pc-qr-reader"></div></div>
+    <div id="pc-scan-result" style="display:none;margin-top:12px;">
+      <div class="success-box" id="pc-scan-status"></div>
+      <div class="form-group">
+        <label class="form-label">Your Passphrase</label>
+        <input class="form-input" id="pc-scan-pass" type="password" placeholder="confirm with your passphrase..." onkeydown="if(event.key==='Enter')confirmPCLink()"/>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="confirmPCLink()" style="touch-action:manipulation;">Link to PC →</button>
+    </div>
+  </div>
+</div>
+
 <!-- MY KEY -->
 <div class="overlay" id="modal-my-key">
   <div class="modal" style="text-align:center;">
@@ -615,7 +634,7 @@ textarea.form-input{resize:none;min-height:80px;}
         <div><div class="shield-title">Storage</div><div class="shield-sub" id="settings-storage">IndexedDB · encrypted</div></div>
       </div>
       <div class="divider"></div>
-      <button class="btn btn-primary btn-full" onclick="openModal('login-qr');closeModal('settings')" style="touch-action:manipulation;">🖥️ Mirror to PC</button>
+      <div id="settings-pc-btn"></div>
       <button class="btn btn-ghost btn-full" onclick="openModal('my-key');closeModal('settings')" style="touch-action:manipulation;">🔑 My Public Key / QR</button>
       <button class="btn btn-ghost btn-full" onclick="exportBackup()" style="touch-action:manipulation;">💾 Export Backup</button>
       <button class="btn btn-ghost btn-full" onclick="importBackup()" style="touch-action:manipulation;">📥 Import Backup</button>
@@ -1462,12 +1481,26 @@ let _wtClient = null
 
 async function initP2P() {
   if (!S.keys?.publicKey) return
+  setP2P('trying', 'Connecting...')
+
+  // Layer 1: BroadcastChannel — instant, same browser/device
+  try {
+    const bc = new BroadcastChannel('pc_social_sync')
+    bc.onmessage = async e => {
+      if (e.data?.pubKey === S.keys.publicKey) {
+        await receiveSyncBlob(new TextEncoder().encode(JSON.stringify(e.data)))
+      }
+    }
+    // Announce ourselves
+    const blob = await buildSyncBlob()
+    if (blob) bc.postMessage(JSON.parse(new TextDecoder().decode(blob)))
+  } catch(e) {}
+
+  // Layer 2: WebTorrent — cross-device, cross-network
   if (typeof WebTorrent === 'undefined') {
-    setP2P('off', 'P2P unavailable — use profile code to sync')
+    setP2P('on', 'Local sync ready')
     return
   }
-
-  setP2P('trying', 'Connecting to sync network...')
 
   try {
     const enc = new TextEncoder()
@@ -1475,14 +1508,22 @@ async function initP2P() {
     const infoHash = hex(new Uint8Array(hashBuf)).slice(0, 40)
 
     _wtClient = new WebTorrent()
+
+    // Timeout — if trackers don't connect in 15s, show as local-only
+    const connectTimeout = setTimeout(() => {
+      if (S.p2pStatus !== 'on') setP2P('on', 'Local sync ready · trackers unreachable')
+    }, 15000)
+
     const magnetURI = `magnet:?xt=urn:btih:${infoHash}&tr=${CFG.TRACKERS.map(encodeURIComponent).join('&tr=')}`
 
     _wtClient.add(magnetURI, { announce: CFG.TRACKERS }, torrent => {
-      setP2P('on', 'Sync ready — open app on another device to sync')
+      clearTimeout(connectTimeout)
+      setP2P('on', 'Sync ready · waiting for your other devices')
 
       torrent.on('wire', async wire => {
         S.peers++
-        document.getElementById('p2p-peers').textContent = S.peers + ' peer' + (S.peers !== 1 ? 's' : '')
+        const peersEl = document.getElementById('p2p-peers')
+        if (peersEl) peersEl.textContent = S.peers + ' peer' + (S.peers !== 1 ? 's' : '')
         setP2P('on', 'Device found — syncing...')
 
         // Send our data
@@ -1491,25 +1532,28 @@ async function initP2P() {
           try { wire.write(blob) } catch(e) {}
         }
 
-        // Receive data
+        // Receive
         const chunks = []
         wire.on('data', chunk => chunks.push(chunk))
         wire.on('end', async () => {
-          const buf = Buffer.concat ? Buffer.concat(chunks) : new Uint8Array(chunks.flatMap(c => [...c]))
-          await receiveSyncBlob(buf)
+          try {
+            const all = new Uint8Array(chunks.reduce((a,c) => a+c.length, 0))
+            let offset = 0
+            chunks.forEach(c => { all.set(c, offset); offset += c.length })
+            await receiveSyncBlob(all)
+          } catch(e) {}
         })
       })
-
-      torrent.on('noPeers', () => {
-        setP2P('on', 'Sync ready — no other devices online yet')
-      })
     })
 
-    _wtClient.on('error', () => {
-      setP2P('off', 'Sync unavailable — use Profile Code to sync manually')
+    _wtClient.on('error', err => {
+      console.warn('WebTorrent error:', err)
+      clearTimeout(connectTimeout)
+      setP2P('on', 'Local sync only · P2P trackers unavailable')
     })
+
   } catch(e) {
-    setP2P('off', 'Sync unavailable')
+    setP2P('on', 'Local sync ready')
   }
 }
 
@@ -1673,6 +1717,7 @@ function openModal(name) {
   if (!el) return
   el.classList.add('open')
   if (name === 'scan') setTimeout(startScanner, 300)
+  if (name === 'scan-pc') setTimeout(startPCScanner, 300)
   if (name === 'my-key') openMyKeyModal()
   if (name === 'login-qr') setTimeout(generateLoginQR, 100)
   if (name === 'settings') updateSettingsStatus()
@@ -1688,6 +1733,7 @@ function closeModal(name) {
   const el = document.getElementById('modal-' + name)
   if (el) el.classList.remove('open')
   if (name === 'scan') stopScanner()
+  if (name === 'scan-pc') stopPCScanner()
 }
 
 function updateSettingsStatus() {
@@ -1698,6 +1744,17 @@ function updateSettingsStatus() {
     navigator.storage?.estimate().then(e => {
       st.textContent = `IndexedDB · ${Math.round((e.usage||0)/1024)}KB`
     }).catch(() => { st.textContent = 'IndexedDB' })
+  }
+  // Inject correct PC button based on device
+  const pcBtn = document.getElementById('settings-pc-btn')
+  if (pcBtn) {
+    if (isMobile()) {
+      // Mobile: open camera to scan PC QR
+      pcBtn.innerHTML = `<button class="btn btn-primary btn-full" onclick="openModal('scan-pc');closeModal('settings')" style="touch-action:manipulation;">🖥️ Connect to PC</button>`
+    } else {
+      // PC: just a note, QR is already on the waiting screen
+      pcBtn.innerHTML = `<div class="info-box" style="margin:0;">💡 On your phone: Settings → Connect to PC → scan this screen.</div>`
+    }
   }
 }
 
@@ -1746,6 +1803,99 @@ function timeAgo(ts) {
 
 function isMobile() {
   return /android|iphone|ipad|ipod/i.test(navigator.userAgent) || window.innerWidth < 768
+}
+
+// ════════════════════════════════════════
+// PC LINK SCANNER (phone scans PC QR)
+// ════════════════════════════════════════
+let _pcScanner = null
+let _pcScanData = null
+
+function startPCScanner() {
+  const readerEl = document.getElementById('pc-qr-reader')
+  if (!_pcScanner) _pcScanner = new Html5Qrcode('pc-qr-reader')
+
+  _pcScanner.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 220, height: 220 } },
+    text => handlePCScan(text),
+    () => {}
+  ).catch(err => {
+    console.warn('PC scanner error:', err)
+    navigator.mediaDevices?.getUserMedia({ video: true })
+      .then(s => { s.getTracks().forEach(t=>t.stop()); startPCScanner() })
+      .catch(() => {
+        if (readerEl) readerEl.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);font-size:.8rem;">📷 Allow camera in Settings → PrivacyChase → Camera</div>'
+      })
+  })
+}
+
+function stopPCScanner() {
+  if (_pcScanner) _pcScanner.stop().catch(()=>{})
+}
+
+function handlePCScan(text) {
+  stopPCScanner()
+  try {
+    const data = JSON.parse(text)
+    if (data.t !== 'pcw') { toast('⚠️ Not a PrivacyChase PC QR'); return }
+    _pcScanData = data
+    document.getElementById('pc-scan-status').textContent = '✅ PC found — enter passphrase to confirm'
+    document.getElementById('pc-scan-result').style.display = 'block'
+    document.getElementById('pc-scan-pass').focus()
+  } catch(e) { toast('⚠️ Invalid QR — make sure you scan the PC waiting screen') }
+}
+
+async function confirmPCLink() {
+  if (!_pcScanData) return
+  const pass = document.getElementById('pc-scan-pass').value.trim()
+  if (!pass) { toast('⚠️ Enter your passphrase'); return }
+
+  const derived = await deriveKeys(pass)
+  if (derived.publicKey !== S.keys?.publicKey) {
+    toast('✗ Wrong passphrase')
+    return
+  }
+
+  // Broadcast our full profile to the PC via BroadcastChannel + WebTorrent
+  await linkToPC(_pcScanData.sid)
+  closeModal('scan-pc')
+  toast('🖥️ Linked to PC — it should mirror now!')
+  _pcScanData = null
+}
+
+async function linkToPC(sessionId) {
+  const payload = {
+    type: 'phone_linked',
+    user: S.user,
+    keys: S.keys,
+    posts: S.posts,
+    connections: S.connections,
+  }
+
+  // BroadcastChannel (same browser/device)
+  try {
+    const bc = new BroadcastChannel('pc_social_pc_wait')
+    bc.postMessage(payload)
+  } catch(e) {}
+
+  // WebTorrent (cross-device, cross-network)
+  if (typeof WebTorrent !== 'undefined' && sessionId) {
+    try {
+      const enc = new TextEncoder()
+      const hashBuf = await crypto.subtle.digest('SHA-1', enc.encode('pc_wait_' + sessionId))
+      const infoHash = hex(new Uint8Array(hashBuf)).slice(0, 40)
+      const wt = new WebTorrent()
+      const magnetURI = `magnet:?xt=urn:btih:${infoHash}&tr=${CFG.TRACKERS.map(encodeURIComponent).join('&tr=')}`
+      wt.add(magnetURI, { announce: CFG.TRACKERS }, torrent => {
+        torrent.on('wire', wire => {
+          try { wire.write(new TextEncoder().encode(JSON.stringify(payload))) } catch(e) {}
+        })
+      })
+      // Destroy after 30s
+      setTimeout(() => wt.destroy(), 30000)
+    } catch(e) {}
+  }
 }
 
 // ════════════════════════════════════════
