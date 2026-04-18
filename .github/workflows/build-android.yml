@@ -1,0 +1,99 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'capacitor/**'
+      - '.github/workflows/build-android.yml'
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: capacitor/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        working-directory: capacitor
+        run: npm ci
+
+      - name: Sync Capacitor
+        working-directory: capacitor
+        run: npx cap sync android
+
+      - name: Make gradlew executable
+        working-directory: capacitor/android
+        run: chmod +x gradlew
+
+      - name: Build debug APK
+        working-directory: capacitor/android
+        run: ./gradlew assembleDebug
+
+      - name: Sign release APK
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        working-directory: capacitor/android
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo -n "$ANDROID_KEYSTORE_BASE64" | base64 --decode > /tmp/privacychase.keystore
+          ./gradlew assembleRelease
+          # Sign the APK
+          $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner sign \
+            --ks /tmp/privacychase.keystore \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --ks-pass pass:"$ANDROID_KEYSTORE_PASSWORD" \
+            --key-pass pass:"$ANDROID_KEY_PASSWORD" \
+            --out app/build/outputs/apk/release/PrivacyChase-signed.apk \
+            app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PrivacyChase-Android-Debug-${{ github.sha }}
+          path: capacitor/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Upload release APK
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: PrivacyChase-Android-Release-${{ github.sha }}
+          path: capacitor/android/app/build/outputs/apk/release/PrivacyChase-signed.apk
+          retention-days: 30
+
+      - name: Create Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: android-${{ github.run_number }}
+          name: Android Build ${{ github.run_number }}
+          draft: false
+          prerelease: true
+          files: |
+            capacitor/android/app/build/outputs/apk/debug/app-debug.apk
+            capacitor/android/app/build/outputs/apk/release/PrivacyChase-signed.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

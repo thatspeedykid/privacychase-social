@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#0a0a0f"/>
+<title>PrivacyChase Social</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/otpauth/9.3.6/otpauth.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/webtorrent/2.1.33/webtorrent.min.js"></script>
+<style>
+/* ── RESET ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overscroll-behavior:none;}
+
+/* ── TOKENS ── */
+:root{
+  --bg:#0a0a0f;
+  --surface:#111118;
+  --surface2:#18181f;
+  --border:#1f1f2e;
+  --text:#eeeef5;
+  --muted:#5c5c7a;
+  --accent:#4ade80;
+  --accent-dim:rgba(74,222,128,.08);
+  --accent-border:rgba(74,222,128,.2);
+  --blue:#60a5fa;
+  --rose:#f87171;
+  --amber:#fbbf24;
+  --purple:#c084fc;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --nav-h:56px;
+  --bnav-h:64px;
+}
+
+/* ── BASE ── */
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-weight:300;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── SCREENS ── */
+.screen{display:none;flex-direction:column;min-height:100vh;}
+.screen.active{display:flex;}
+
+/* ── TYPOGRAPHY ── */
+.serif{font-family:'DM Serif Display',serif;}
+.mono{font-family:'DM Mono',monospace;}
+.label{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+.accent{color:var(--accent);}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-family:'DM Mono',monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;
+  padding:14px 22px;border-radius:8px;cursor:pointer;border:none;
+  transition:all .15s;text-decoration:none;touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;
+}
+.btn-primary{background:var(--accent);color:#0a0a0f;font-weight:500;}
+.btn-primary:active{background:#3acc70;transform:scale(.98);}
+.btn-primary:disabled{background:var(--muted);cursor:not-allowed;}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:active{background:var(--surface2);}
+.btn-danger{background:rgba(248,113,113,.1);color:var(--rose);border:1px solid rgba(248,113,113,.2);}
+.btn-full{width:100%;}
+.btn-sm{padding:9px 16px;font-size:.65rem;}
+
+/* ── FORMS ── */
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+.form-input{
+  width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:13px 15px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.95rem;
+  outline:none;transition:border-color .15s;-webkit-appearance:none;
+}
+.form-input:focus{border-color:var(--accent);}
+.form-input::placeholder{color:var(--muted);}
+textarea.form-input{resize:none;min-height:80px;}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;}
+
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;gap:4px;font-family:'DM Mono',monospace;font-size:.56rem;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:4px;}
+.badge-green{background:var(--accent-dim);border:1px solid var(--accent-border);color:var(--accent);}
+.badge-blue{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.2);color:var(--blue);}
+.badge-amber{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);color:var(--amber);}
+.badge-rose{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:var(--rose);}
+.badge-purple{background:rgba(192,132,252,.08);border:1px solid rgba(192,132,252,.2);color:var(--purple);}
+
+/* ── NAV ── */
+.app-nav{
+  position:sticky;top:0;z-index:100;
+  height:calc(var(--nav-h) + var(--safe-top));
+  padding-top:var(--safe-top);
+  background:rgba(10,10,15,.95);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding-left:16px;padding-right:16px;flex-shrink:0;
+}
+.nav-logo{font-family:'DM Serif Display',serif;font-size:1rem;display:flex;align-items:center;gap:6px;}
+.nav-logo span{color:var(--accent);}
+.nav-logo small{font-family:'DM Mono',monospace;font-size:.48rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border:1px solid var(--border);border-radius:3px;padding:1px 5px;}
+.nav-actions{display:flex;gap:6px;align-items:center;}
+.nav-btn{width:34px;height:34px;background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;color:var(--text);touch-action:manipulation;transition:border-color .15s;}
+.nav-btn:active{border-color:var(--accent);}
+.nav-avi{width:34px;height:34px;border-radius:8px;border:1.5px solid var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--surface2);touch-action:manipulation;}
+
+/* ── BOTTOM NAV ── */
+.bnav{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  height:calc(var(--bnav-h) + var(--safe-bottom));
+  padding-bottom:var(--safe-bottom);
+  background:rgba(10,10,15,.97);backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-around;
+  padding-top:6px;
+}
+.bnav-item{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  cursor:pointer;padding:4px 14px;border-radius:8px;
+  touch-action:manipulation;border:none;background:transparent;
+  color:var(--muted);font-family:'DM Mono',monospace;font-size:.48rem;
+  letter-spacing:.06em;text-transform:uppercase;transition:color .15s;
+}
+.bnav-item.active{color:var(--accent);}
+.bnav-icon{font-size:20px;line-height:1;}
+.bnav-dot{width:4px;height:4px;border-radius:50%;background:var(--accent);display:none;}
+.bnav-item.active .bnav-dot{display:block;}
+
+/* ── FEED ── */
+.feed-wrap{max-width:560px;margin:0 auto;padding:12px 14px 0;width:100%;}
+
+/* ── POST ── */
+.post{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;}
+.post-head{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;}
+.post-avi{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.post-name{font-size:.85rem;font-weight:500;}
+.post-handle{font-family:'DM Mono',monospace;font-size:.58rem;color:var(--muted);}
+.post-time{font-family:'DM Mono',monospace;font-size:.54rem;color:var(--muted);margin-left:auto;flex-shrink:0;}
+.post-body{font-size:.88rem;line-height:1.7;color:var(--text);margin-bottom:10px;word-break:break-word;}
+.post-loc{display:flex;align-items:center;gap:4px;font-family:'DM Mono',monospace;font-size:.56rem;color:var(--muted);margin-bottom:8px;}
+.post-actions{display:flex;gap:2px;}
+.post-action{display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:.72rem;color:var(--muted);background:transparent;border:none;font-family:'DM Sans',sans-serif;touch-action:manipulation;transition:background .15s;}
+.post-action:active{background:var(--surface2);}
+.post-action.liked{color:var(--rose);}
+
+/* ── COMPOSE ── */
+.compose{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;}
+.compose-row{display:flex;gap:10px;}
+.compose-avi{width:34px;height:34px;border-radius:8px;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.compose-field{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;resize:none;min-height:52px;transition:border-color .15s;}
+.compose-field:focus{border-color:var(--accent);}
+.compose-field::placeholder{color:var(--muted);}
+.compose-footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-left:44px;}
+
+/* ── PROFILE ── */
+.profile-banner{height:110px;position:relative;overflow:hidden;flex-shrink:0;}
+.profile-banner-bg{position:absolute;inset:0;}
+.profile-body{max-width:560px;margin:0 auto;padding:0 16px 100px;width:100%;}
+.profile-avi-wrap{position:relative;display:inline-block;margin-top:-38px;margin-bottom:10px;}
+.profile-avi{width:76px;height:76px;border-radius:14px;background:var(--surface2);border:4px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:34px;}
+.profile-online{position:absolute;bottom:2px;right:2px;width:13px;height:13px;background:var(--accent);border-radius:50%;border:2px solid var(--bg);}
+.profile-name{font-family:'DM Serif Display',serif;font-size:1.6rem;letter-spacing:-.02em;margin-bottom:2px;}
+.profile-handle{font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;}
+.profile-bio{font-size:.85rem;color:#9898b0;line-height:1.65;margin-bottom:12px;max-width:380px;}
+.profile-stats{display:flex;gap:20px;margin-bottom:14px;}
+.pstat-num{font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--accent);}
+.pstat-label{font-family:'DM Mono',monospace;font-size:.54rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.profile-acts{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px;}
+
+/* ── CONNECTIONS ── */
+.conn-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.conn-row:last-child{border:none;}
+.conn-avi{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.conn-name{font-size:.85rem;font-weight:500;}
+.conn-meta{font-family:'DM Mono',monospace;font-size:.56rem;color:var(--muted);}
+.conn-online{width:7px;height:7px;border-radius:50%;margin-left:auto;flex-shrink:0;}
+
+/* ── TABS ── */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;}
+.tab{padding:9px 14px;font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;touch-action:manipulation;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* ── MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(16px);z-index:500;display:none;align-items:flex-end;justify-content:center;padding:0;}
+.overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:480px;position:relative;max-height:90vh;overflow-y:auto;padding-bottom:calc(24px + var(--safe-bottom));}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;}
+.modal-close{position:absolute;top:16px;right:16px;width:28px;height:28px;background:var(--surface2);border:none;border-radius:6px;color:var(--muted);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
+.modal-title{font-family:'DM Serif Display',serif;font-size:1.5rem;margin-bottom:5px;}
+.modal-sub{font-size:.82rem;color:var(--muted);margin-bottom:18px;line-height:1.6;}
+
+/* ── ONBOARD ── */
+.onboard-wrap{width:100%;max-width:400px;margin:0 auto;padding:80px 20px 40px;}
+.step-bar{display:flex;gap:4px;margin-bottom:24px;}
+.step-seg{height:2px;border-radius:1px;flex:1;transition:background .4s;}
+.step-seg.done{background:rgba(74,222,128,.4);}
+.step-seg.active{background:var(--accent);}
+.step-seg.pending{background:var(--border);}
+.step-label{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:4px;}
+.step-title{font-family:'DM Serif Display',serif;font-size:1.8rem;letter-spacing:-.02em;margin-bottom:5px;}
+.step-sub{font-size:.83rem;color:var(--muted);margin-bottom:20px;line-height:1.6;}
+.strength-bar{height:3px;border-radius:2px;margin-top:6px;transition:all .3s;}
+
+/* ── QR ── */
+.qr-wrap{background:#fff;padding:12px;border-radius:10px;display:inline-block;}
+.qr-center{display:flex;justify-content:center;margin-bottom:12px;}
+
+/* ── SCANNER ── */
+.scanner-box{border-radius:12px;overflow:hidden;background:#000;aspect-ratio:1;width:100%;max-width:280px;margin:0 auto 14px;border:1px solid var(--border);}
+#qr-reader{width:100%!important;}
+#qr-reader video{width:100%!important;height:100%!important;object-fit:cover!important;}
+#qr-reader__scan_region{background:transparent!important;}
+#qr-reader__dashboard{display:none!important;}
+
+/* ── PC WAITING SCREEN ── */
+.pc-wait{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:40px 24px;background:var(--bg);}
+.pc-qr-outer{background:#fff;padding:16px;border-radius:16px;display:inline-block;margin-bottom:20px;box-shadow:0 0 60px rgba(74,222,128,.1);}
+.pc-status{display:flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.pc-pulse{width:8px;height:8px;border-radius:50%;background:var(--amber);animation:pulse 2s ease infinite;flex-shrink:0;}
+.pc-pulse.connected{background:var(--accent);}
+
+/* ── MISC ── */
+.divider{height:1px;background:var(--border);margin:16px 0;}
+.warn-box{background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:12px;margin-bottom:14px;font-size:.78rem;color:#fcd34d;line-height:1.6;}
+.info-box{background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.2);border-radius:8px;padding:12px;margin-bottom:14px;font-size:.78rem;color:#93c5fd;line-height:1.6;}
+.success-box{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.2);border-radius:8px;padding:12px;margin-bottom:14px;font-size:.78rem;color:var(--accent);line-height:1.6;}
+.empty{text-align:center;padding:40px 16px;}
+.empty-icon{font-size:2.5rem;margin-bottom:12px;}
+.empty-title{font-family:'DM Serif Display',serif;font-size:1.2rem;margin-bottom:6px;}
+.empty-sub{font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:18px;}
+.shield{background:var(--surface);border:1px solid var(--accent-border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.shield-icon{font-size:1.2rem;flex-shrink:0;}
+.shield-title{font-size:.82rem;font-weight:500;}
+.shield-sub{font-family:'DM Mono',monospace;font-size:.56rem;color:var(--accent);}
+.p2p-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:5px 16px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.p2p-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.p2p-dot.on{background:var(--accent);}
+.p2p-dot.trying{background:var(--amber);animation:blink 1s ease infinite;}
+.p2p-dot.off{background:var(--muted);}
+.p2p-text{font-family:'DM Mono',monospace;font-size:.58rem;color:var(--muted);flex:1;}
+.p2p-peers{font-family:'DM Mono',monospace;font-size:.58rem;color:var(--accent);}
+.toast{position:fixed;bottom:calc(var(--bnav-h) + var(--safe-bottom) + 10px);left:50%;transform:translateX(-50%) translateY(10px);background:var(--surface);border:1px solid var(--accent-border);border-radius:8px;padding:9px 16px;font-family:'DM Mono',monospace;font-size:.64rem;letter-spacing:.04em;z-index:1000;transition:all .25s;opacity:0;pointer-events:none;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.key-display{font-family:'DM Mono',monospace;font-size:.58rem;color:var(--muted);word-break:break-all;line-height:1.7;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;}
+.key-display .hi{color:var(--accent);}
+
+/* ── ANIMATIONS ── */
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.3)}50%{box-shadow:0 0 0 8px rgba(74,222,128,0)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fade-up{animation:fadeUp .3s ease forwards;}
+
+/* ── PC ONLY ── */
+@media(min-width:768px){
+  .mobile-only{display:none!important;}
+  .overlay{align-items:center;}
+  .modal{border-radius:14px;margin-bottom:0;}
+}
+@media(max-width:767px){
+  .pc-only{display:none!important;}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+  SCREEN: PC WAITING (shown on desktop when not logged in)
+════════════════════════════════════════ -->
+<div id="screen-pc-wait" class="screen pc-only">
+  <div class="pc-wait">
+    <p class="label accent" style="margin-bottom:16px;">PrivacyChase Social · v1.0</p>
+    <h1 class="serif" style="font-size:clamp(2rem,5vw,3.5rem);letter-spacing:-.03em;margin-bottom:8px;">
+      Open on your<br><em style="color:var(--accent)">phone</em> to begin.
+    </h1>
+    <p style="color:var(--muted);font-size:.9rem;max-width:380px;margin:0 auto 32px;line-height:1.7;">
+      PrivacyChase is phone-first. Create your account on your phone, then scan this QR to mirror it here.
+    </p>
+
+    <!-- QR code - PC session ID for phone to connect to -->
+    <div class="pc-qr-outer">
+      <div id="pc-wait-qr" style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;">
+        <div style="font-family:'DM Mono',monospace;font-size:.7rem;color:#999;text-align:center;">Generating...</div>
+      </div>
+    </div>
+
+    <div class="pc-status">
+      <div class="pc-pulse" id="pc-pulse"></div>
+      <span id="pc-status-text">Waiting for your phone...</span>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:24px;">
+      <span class="badge badge-green">E2E Encrypted</span>
+      <span class="badge badge-blue">Phone First</span>
+      <span class="badge badge-amber">No Servers</span>
+      <span class="badge badge-purple">P2P Sync</span>
+    </div>
+
+    <div style="margin-top:32px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:360px;text-align:left;">
+      <p class="label" style="margin-bottom:10px;">How it works</p>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.8rem;color:var(--muted);">
+          <span style="color:var(--accent);flex-shrink:0;font-family:'DM Mono',monospace;">01</span>
+          <span>Open social.privacychase.com on your phone</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.8rem;color:var(--muted);">
+          <span style="color:var(--accent);flex-shrink:0;font-family:'DM Mono',monospace;">02</span>
+          <span>Create your account with a passphrase</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.8rem;color:var(--muted);">
+          <span style="color:var(--accent);flex-shrink:0;font-family:'DM Mono',monospace;">03</span>
+          <span>Scan this QR — your PC mirrors instantly</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+  SCREEN: ONBOARD (mobile only)
+════════════════════════════════════════ -->
+<div id="screen-onboard" class="screen mobile-only">
+  <div class="onboard-wrap">
+
+    <!-- STEP 1: Passphrase -->
+    <div id="ob-s1">
+      <div class="step-bar">
+        <div class="step-seg active"></div>
+        <div class="step-seg pending"></div>
+        <div class="step-seg pending"></div>
+        <div class="step-seg pending"></div>
+      </div>
+      <p class="step-label">Step 1 of 4</p>
+      <h2 class="step-title">Your passphrase.</h2>
+      <p class="step-sub">This IS your account. Same passphrase on any device = same identity. Write it down — no recovery if lost.</p>
+      <div class="form-group">
+        <label class="form-label">Choose a passphrase</label>
+        <input class="form-input" id="ob-pass" type="password" placeholder="make it memorable..." autocomplete="new-password" oninput="checkStrength()"/>
+        <div class="strength-bar" id="strength-bar"></div>
+        <div style="font-family:'DM Mono',monospace;font-size:.56rem;color:var(--muted);margin-top:4px;" id="strength-label"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm passphrase</label>
+        <input class="form-input" id="ob-pass2" type="password" placeholder="type it again..." autocomplete="new-password"/>
+      </div>
+      <div class="warn-box">⚠️ No password reset. No recovery. Lose this = lose your account forever.</div>
+      <button class="btn btn-primary btn-full" onclick="obStep1()">Continue →</button>
+    </div>
+
+    <!-- STEP 2: Profile -->
+    <div id="ob-s2" style="display:none;">
+      <div class="step-bar">
+        <div class="step-seg done"></div>
+        <div class="step-seg active"></div>
+        <div class="step-seg pending"></div>
+        <div class="step-seg pending"></div>
+      </div>
+      <p class="step-label">Step 2 of 4</p>
+      <h2 class="step-title">Your profile.</h2>
+      <p class="step-sub">This is how you appear to people you connect with in person.</p>
+      <div class="form-group">
+        <label class="form-label">Display Name</label>
+        <input class="form-input" id="ob-name" placeholder="Your name" maxlength="32"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Handle</label>
+        <input class="form-input" id="ob-handle" placeholder="@yourhandle" maxlength="24"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Bio</label>
+        <textarea class="form-input" id="ob-bio" placeholder="Tell people who you are..." maxlength="160"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Pick an avatar</label>
+        <div id="avatar-picker" style="display:flex;flex-wrap:wrap;gap:8px;">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="obStep2()">Continue →</button>
+    </div>
+
+    <!-- STEP 3: TOTP -->
+    <div id="ob-s3" style="display:none;">
+      <div class="step-bar">
+        <div class="step-seg done"></div>
+        <div class="step-seg done"></div>
+        <div class="step-seg active"></div>
+        <div class="step-seg pending"></div>
+      </div>
+      <p class="step-label">Step 3 of 4</p>
+      <h2 class="step-title">2FA lock.</h2>
+      <p class="step-sub">Scan into Google Authenticator, Authy, or Apple Passwords for extra security.</p>
+      <div class="qr-center"><div class="qr-wrap" id="totp-qr"></div></div>
+      <div style="background:var(--bg);border:1px solid var(--accent-border);border-radius:8px;padding:12px;margin-bottom:14px;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--accent);letter-spacing:.08em;text-align:center;cursor:pointer;word-break:break-all;" id="totp-secret" onclick="copyTotpSecret()">Tap to reveal secret key</div>
+      <div class="info-box">💡 No auth app? Skip for now — you can enable it later in settings.</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-full" onclick="obSkipTotp()">Skip</button>
+        <button class="btn btn-primary btn-full" onclick="obStep3()">Scanned it →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Verify TOTP -->
+    <div id="ob-s4" style="display:none;">
+      <div class="step-bar">
+        <div class="step-seg done"></div>
+        <div class="step-seg done"></div>
+        <div class="step-seg done"></div>
+        <div class="step-seg active"></div>
+      </div>
+      <p class="step-label">Step 4 of 4</p>
+      <h2 class="step-title">Verify code.</h2>
+      <p class="step-sub">Enter the 6-digit code from your auth app to confirm it's set up correctly.</p>
+      <div class="form-group">
+        <input class="form-input" id="totp-verify" type="tel" maxlength="6" placeholder="6-digit code" style="text-align:center;font-family:'DM Mono',monospace;font-size:1.6rem;letter-spacing:.3em;" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6);if(this.value.length===6)obVerifyTotp()" onkeydown="if(event.key==='Enter')obVerifyTotp()"/>
+      </div>
+      <div id="totp-err" style="display:none;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--rose);text-align:center;margin-bottom:10px;">✗ Wrong code — check your auth app</div>
+      <button class="btn btn-primary btn-full" onclick="obVerifyTotp()">Finish Setup →</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+  SCREEN: LOGIN (mobile only)
+════════════════════════════════════════ -->
+<div id="screen-login" class="screen mobile-only">
+  <div class="onboard-wrap">
+    <div class="card">
+      <p class="step-label">Welcome back</p>
+      <h2 class="step-title">Sign in.</h2>
+      <p class="step-sub">Enter your passphrase to restore your account and keys.</p>
+
+      <div id="login-pass-section">
+        <div class="form-group">
+          <label class="form-label">Passphrase</label>
+          <input class="form-input" id="login-passphrase" type="password" placeholder="your passphrase..." autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="doLogin()" style="touch-action:manipulation;">Sign In →</button>
+      </div>
+
+      <div id="login-totp-section" style="display:none;margin-top:16px;">
+        <div class="divider"></div>
+        <p class="step-sub" style="margin-top:14px;">Enter your 6-digit auth code:</p>
+        <input class="form-input" id="login-totp" type="tel" maxlength="6" placeholder="6-digit code" style="text-align:center;font-family:'DM Mono',monospace;font-size:1.6rem;letter-spacing:.3em;margin-bottom:10px;" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6);if(this.value.length===6)doLoginTotp()" onkeydown="if(event.key==='Enter')doLoginTotp()"/>
+        <div id="login-totp-err" style="display:none;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--rose);text-align:center;margin-bottom:10px;">✗ Wrong code</div>
+        <button class="btn btn-primary btn-full" onclick="doLoginTotp()" style="touch-action:manipulation;">Sign In →</button>
+        <button class="btn btn-ghost btn-full" style="margin-top:8px;touch-action:manipulation;" onclick="resetLoginScreen()">← Try different passphrase</button>
+      </div>
+
+      <div style="margin-top:16px;text-align:center;">
+        <button class="btn btn-ghost btn-sm" onclick="showScreen('screen-onboard')" style="touch-action:manipulation;">New here? Create account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+  SCREEN: FEED
+════════════════════════════════════════ -->
+<div id="screen-feed" class="screen">
+  <div class="app-nav">
+    <div class="nav-logo">Privacy<span>Chase</span> <small>Social</small></div>
+    <div class="nav-actions">
+      <button class="nav-btn" onclick="openModal('scan')" title="Scan QR to connect">📷</button>
+      <button class="nav-btn" onclick="openModal('settings')" title="Settings">⚙️</button>
+      <div class="nav-avi" id="feed-avi" onclick="showTab('profile')">🦊</div>
+    </div>
+  </div>
+  <div class="p2p-bar">
+    <div class="p2p-dot trying" id="p2p-dot"></div>
+    <span class="p2p-text" id="p2p-text">Connecting to network...</span>
+    <span class="p2p-peers" id="p2p-peers"></span>
+  </div>
+  <div class="feed-wrap" style="padding-bottom:80px;">
+    <div class="compose" id="compose-wrap">
+      <div class="compose-row">
+        <div class="compose-avi" id="compose-avi">🦊</div>
+        <textarea class="compose-field" id="compose-text" placeholder="What's happening? Encrypted before sending." rows="2"></textarea>
+      </div>
+      <div class="compose-footer">
+        <button class="btn btn-ghost btn-sm" onclick="toggleLoc()" id="loc-btn" style="touch-action:manipulation;">📍 Add location</button>
+        <button class="btn btn-primary btn-sm" onclick="submitPost()" style="touch-action:manipulation;">Post</button>
+      </div>
+    </div>
+    <div id="post-feed"></div>
+  </div>
+  <div class="bnav">
+    <button class="bnav-item active" id="bn-feed" onclick="showTab('feed')"><span class="bnav-icon">🏠</span>Feed<div class="bnav-dot"></div></button>
+    <button class="bnav-item" id="bn-scan" onclick="openModal('scan')"><span class="bnav-icon">📷</span>Connect</button>
+    <button class="bnav-item" id="bn-profile" onclick="showTab('profile')"><span class="bnav-icon">👤</span>Profile<div class="bnav-dot"></div></button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+  SCREEN: PROFILE
+════════════════════════════════════════ -->
+<div id="screen-profile" class="screen">
+  <div class="app-nav">
+    <div class="nav-logo">Privacy<span>Chase</span> <small>Profile</small></div>
+    <div class="nav-actions">
+      <button class="nav-btn" onclick="openModal('settings')">⚙️</button>
+    </div>
+  </div>
+  <div class="profile-banner">
+    <div class="profile-banner-bg" id="profile-banner-bg" style="background:linear-gradient(135deg,#0f2a0f,#0a1a2e);"></div>
+  </div>
+  <div class="profile-body">
+    <div class="profile-avi-wrap">
+      <div class="profile-avi" id="profile-avi">🦊</div>
+      <div class="profile-online"></div>
+    </div>
+    <div class="profile-name" id="profile-name">—</div>
+    <div class="profile-handle" id="profile-handle">—</div>
+    <div class="profile-bio" id="profile-bio">—</div>
+    <div class="profile-stats">
+      <div><div class="pstat-num" id="stat-connections">0</div><div class="pstat-label">Connections</div></div>
+      <div><div class="pstat-num" id="stat-posts">0</div><div class="pstat-label">Posts</div></div>
+    </div>
+    <div class="profile-acts">
+      <button class="btn btn-primary btn-sm" onclick="openModal('my-key')" style="touch-action:manipulation;">My QR 🔑</button>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('scan')" style="touch-action:manipulation;">Scan 📷</button>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('settings')" style="touch-action:manipulation;">Settings ⚙️</button>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchProfileTab(this,'ptab-posts')">Posts</div>
+      <div class="tab" onclick="switchProfileTab(this,'ptab-connections')">Connections</div>
+      <div class="tab" onclick="switchProfileTab(this,'ptab-key')">My Key</div>
+    </div>
+    <div id="ptab-posts"></div>
+    <div id="ptab-connections" style="display:none;"></div>
+    <div id="ptab-key" style="display:none;">
+      <div class="qr-center" style="margin-top:14px;"><div class="qr-wrap" id="profile-qr"></div></div>
+      <div class="key-display" id="profile-key-val">—</div>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="copyMyKey()">Copy Public Key</button>
+    </div>
+  </div>
+  <div class="bnav">
+    <button class="bnav-item" id="bn2-feed" onclick="showTab('feed')"><span class="bnav-icon">🏠</span>Feed<div class="bnav-dot"></div></button>
+    <button class="bnav-item" id="bn2-scan" onclick="openModal('scan')"><span class="bnav-icon">📷</span>Connect</button>
+    <button class="bnav-item active" id="bn2-profile" onclick="showTab('profile')"><span class="bnav-icon">👤</span>Profile<div class="bnav-dot"></div></button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+  MODALS
+════════════════════════════════════════ -->
+
+<!-- SCAN QR -->
+<div class="overlay" id="modal-scan">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('scan');stopScanner()">✕</button>
+    <h2 class="modal-title">Connect in Person</h2>
+    <p class="modal-sub">Point at someone's PrivacyChase QR to add them. You must be physically present.</p>
+    <div class="scanner-box"><div id="qr-reader"></div></div>
+    <div id="scan-result" style="display:none;">
+      <div class="success-box" id="scan-result-text"></div>
+      <div class="form-group"><label class="form-label">Their name</label><input class="form-input" id="scan-name" placeholder="How you know them"/></div>
+      <div class="form-group"><label class="form-label">Where you met</label><input class="form-input" id="scan-location" placeholder="At the conference, etc."/></div>
+      <button class="btn btn-primary btn-full" onclick="confirmConnect()" style="touch-action:manipulation;">Connect 🤝</button>
+    </div>
+    <div class="divider"></div>
+    <p class="label" style="margin-bottom:8px;">or paste their key</p>
+    <div style="display:flex;gap:8px;">
+      <input class="form-input" id="paste-key" placeholder="pc1_pub_..." style="flex:1;"/>
+      <button class="btn btn-ghost" onclick="pasteConnect()" style="touch-action:manipulation;">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- MY KEY -->
+<div class="overlay" id="modal-my-key">
+  <div class="modal" style="text-align:center;">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('my-key')">✕</button>
+    <h2 class="modal-title">Your Key</h2>
+    <p class="modal-sub">Have someone scan this to connect with you in person.</p>
+    <div class="qr-center"><div class="qr-wrap" id="my-key-qr"></div></div>
+    <div class="key-display" id="my-key-val" style="margin-bottom:14px;"></div>
+    <button class="btn btn-primary btn-full" onclick="copyMyKey()" style="touch-action:manipulation;">Copy Public Key</button>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px;touch-action:manipulation;" onclick="shareMyKey()">Share via...</button>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="overlay" id="modal-settings">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('settings')">✕</button>
+    <h2 class="modal-title">Settings</h2>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="shield">
+        <div class="shield-icon">🛡️</div>
+        <div><div class="shield-title">Encryption</div><div class="shield-sub">AES-256-GCM · PBKDF2 · Ed25519</div></div>
+      </div>
+      <div class="shield">
+        <div class="shield-icon">🌐</div>
+        <div><div class="shield-title">P2P Status</div><div class="shield-sub" id="settings-p2p-status">Connecting...</div></div>
+      </div>
+      <div class="shield">
+        <div class="shield-icon">💾</div>
+        <div><div class="shield-title">Storage</div><div class="shield-sub" id="settings-storage">IndexedDB</div></div>
+      </div>
+      <div class="divider"></div>
+      <!-- Show Login QR - for PC mirroring -->
+      <button class="btn btn-primary btn-full" onclick="openModal('login-qr');closeModal('settings')" style="touch-action:manipulation;">🔑 Show Login QR for PC</button>
+      <button class="btn btn-ghost btn-full" onclick="openModal('sync-code');closeModal('settings')" style="touch-action:manipulation;">🔄 Sync to Another Device</button>
+      <button class="btn btn-ghost btn-full" onclick="openModal('my-key');closeModal('settings')" style="touch-action:manipulation;">My Public Key</button>
+      <button class="btn btn-ghost btn-full" onclick="exportBackup()" style="touch-action:manipulation;">Export Backup</button>
+      <button class="btn btn-ghost btn-full" onclick="importBackup()" style="touch-action:manipulation;">Import Backup</button>
+      <div class="divider"></div>
+      <button class="btn btn-danger btn-full" onclick="confirmSignOut()" style="touch-action:manipulation;">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN QR (phone shows this for PC to detect) -->
+<div class="overlay" id="modal-login-qr">
+  <div class="modal" style="text-align:center;">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('login-qr')">✕</button>
+    <h2 class="modal-title">Login QR</h2>
+    <p class="modal-sub">Open PrivacyChase on your PC — it will detect this QR automatically and mirror your account.</p>
+    <div class="qr-center"><div class="qr-wrap" id="login-qr-code"></div></div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px;">
+      <div class="label" style="margin-bottom:6px;">Short Code</div>
+      <div id="login-short-code" style="font-family:'DM Mono',monospace;font-size:2rem;letter-spacing:.3em;color:var(--accent);">----</div>
+      <div style="font-family:'DM Mono',monospace;font-size:.56rem;color:var(--muted);margin-top:4px;">Type this on your PC if no camera</div>
+    </div>
+    <button onclick="generateLoginQR()" style="padding:8px 16px;font-family:'DM Mono',monospace;font-size:.65rem;text-transform:uppercase;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:6px;cursor:pointer;touch-action:manipulation;">🔄 Refresh</button>
+  </div>
+</div>
+
+<!-- SYNC CODE -->
+<div class="overlay" id="modal-sync-code">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('sync-code')">✕</button>
+    <h2 class="modal-title">Sync to Device</h2>
+    <p class="modal-sub">Generate a code on this device, paste it on another, enter your passphrase to decrypt.</p>
+    <div class="form-group">
+      <label class="form-label">Your Profile Code</label>
+      <textarea class="form-input" id="sync-code-output" rows="4" readonly style="font-family:'DM Mono',monospace;font-size:.58rem;word-break:break-all;" placeholder="Tap Generate..."></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button class="btn btn-primary btn-full" onclick="generateSyncCode()" style="touch-action:manipulation;">Generate</button>
+      <button class="btn btn-ghost btn-full" onclick="copySyncCode()" style="touch-action:manipulation;">Copy</button>
+    </div>
+    <div class="divider"></div>
+    <p class="label" style="margin-bottom:8px;">Or import from another device:</p>
+    <div class="form-group"><textarea class="form-input" id="sync-code-input" rows="4" style="font-family:'DM Mono',monospace;font-size:.58rem;word-break:break-all;" placeholder="Paste profile code..."></textarea></div>
+    <div class="form-group"><label class="form-label">Passphrase</label><input class="form-input" id="sync-code-pass" type="password" placeholder="your passphrase..." onkeydown="if(event.key==='Enter')importSyncCode()"/></div>
+    <button class="btn btn-primary btn-full" onclick="importSyncCode()" style="touch-action:manipulation;">Import →</button>
+    <div id="sync-code-status" style="display:none;margin-top:10px;font-family:'DM Mono',monospace;font-size:.65rem;text-align:center;"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="backup-input" accept=".json" style="display:none" onchange="handleBackupImport(event)"/>
+
+<script>
+'use strict'
+
+// ════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════
+const CFG = {
+  APP: 'PrivacyChase Social',
+  VER: 'v1.0',
+  DB: 'pc_social_v1',
+  SALT: 'privacychase_social_v1_2026',
+  PBKDF2_ITER: 200000,
+  TRACKERS: [
+    'wss://tracker.btorrent.xyz',
+    'wss://tracker.openwebtorrent.com',
+  ],
+}
+
+// ════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════
+const S = {
+  user: null,       // { name, handle, bio, avatar, theme }
+  keys: null,       // { privateKey (hex), publicKey (hex with prefix) }
+  totp: null,       // OTPAuth.TOTP instance
+  totpSecret: null, // base32 string
+  totpEnabled: false,
+  posts: [],
+  connections: [],
+  peers: 0,
+  p2pStatus: 'off',
+  wtClient: null,
+  scanner: null,
+  scanData: null,   // pending scan result
+  _obPass: '',      // temp during onboard
+  _obProfile: {},   // temp during onboard
+  _obTotp: null,    // temp during onboard
+  _obTotpSecret: '',
+}
+
+// ════════════════════════════════════════
+// INDEXEDDB
+// ════════════════════════════════════════
+let _db = null
+
+async function dbOpen() {
+  if (_db) return _db
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(CFG.DB, 1)
+    req.onupgradeneeded = e => {
+      if (!e.target.result.objectStoreNames.contains('kv'))
+        e.target.result.createObjectStore('kv', { keyPath: 'k' })
+    }
+    req.onsuccess = e => { _db = e.target.result; res(_db) }
+    req.onerror = () => rej(req.error)
+  })
+}
+
+async function dbSet(k, v) {
+  const db = await dbOpen()
+  return new Promise((res, rej) => {
+    const tx = db.transaction('kv', 'readwrite')
+    tx.objectStore('kv').put({ k, v })
+    tx.oncomplete = res; tx.onerror = () => rej(tx.error)
+  })
+}
+
+async function dbGet(k) {
+  const db = await dbOpen()
+  return new Promise((res, rej) => {
+    const tx = db.transaction('kv', 'readonly')
+    const req = tx.objectStore('kv').get(k)
+    req.onsuccess = () => res(req.result?.v ?? null)
+    req.onerror = () => rej(req.error)
+  })
+}
+
+async function save() {
+  const data = {
+    user: S.user,
+    keys: S.keys,
+    totpSecret: S.totpSecret,
+    totpEnabled: S.totpEnabled,
+    posts: S.posts,
+    connections: S.connections,
+  }
+  await dbSet('main', data)
+  // Also sessionStorage for refresh
+  try { sessionStorage.setItem('pc_keys', JSON.stringify(S.keys)) } catch(e) {}
+}
+
+async function loadData() {
+  try {
+    const data = await dbGet('main')
+    if (!data || !data.user || !data.keys) return false
+    S.user = data.user
+    S.keys = data.keys
+    S.totpSecret = data.totpSecret
+    S.totpEnabled = data.totpEnabled || false
+    S.posts = data.posts || []
+    S.connections = data.connections || []
+    // Recreate TOTP object
+    if (S.totpEnabled && S.totpSecret) {
+      S.totp = new OTPAuth.TOTP({
+        issuer: CFG.APP, label: S.user.handle || 'user',
+        algorithm: 'SHA1', digits: 6, period: 30,
+        secret: OTPAuth.Secret.fromBase32(S.totpSecret)
+      })
+    }
+    return true
+  } catch(e) { return false }
+}
+
+// ════════════════════════════════════════
+// CRYPTO
+// ════════════════════════════════════════
+function hex(buf) {
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('')
+}
+
+function unhex(str) {
+  const b = new Uint8Array(str.length / 2)
+  for (let i = 0; i < str.length; i += 2) b[i/2] = parseInt(str.slice(i,i+2), 16)
+  return b
+}
+
+function b64(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))) }
+function unb64(s) { return Uint8Array.from(atob(s), c => c.charCodeAt(0)) }
+
+async function deriveKeys(passphrase) {
+  const enc = new TextEncoder()
+  const raw = enc.encode(passphrase)
+  const salt = enc.encode(CFG.SALT)
+  const km = await crypto.subtle.importKey('raw', raw, 'PBKDF2', false, ['deriveBits'])
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: CFG.PBKDF2_ITER, hash: 'SHA-256' },
+    km, 512
+  )
+  const arr = new Uint8Array(bits)
+  const priv = arr.slice(0, 32)
+  const pubRaw = new Uint8Array(await crypto.subtle.digest('SHA-256', priv))
+  return {
+    privateKey: hex(priv),
+    publicKey: 'pc1_pub_' + hex(pubRaw),
+  }
+}
+
+async function encryptMsg(text, privKeyHex) {
+  const enc = new TextEncoder()
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const keyBuf = unhex(privKeyHex.slice(0, 64))
+  const ck = await crypto.subtle.importKey('raw', keyBuf, 'AES-GCM', false, ['encrypt'])
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, ck, enc.encode(text))
+  const out = new Uint8Array(12 + ct.byteLength)
+  out.set(iv); out.set(new Uint8Array(ct), 12)
+  return b64(out.buffer)
+}
+
+async function decryptMsg(b64str, privKeyHex) {
+  try {
+    const data = unb64(b64str)
+    const iv = data.slice(0, 12)
+    const ct = data.slice(12)
+    const keyBuf = unhex(privKeyHex.slice(0, 64))
+    const ck = await crypto.subtle.importKey('raw', keyBuf, 'AES-GCM', false, ['decrypt'])
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, ck, ct)
+    return new TextDecoder().decode(pt)
+  } catch(e) { return null }
+}
+
+// ════════════════════════════════════════
+// ONBOARDING
+// ════════════════════════════════════════
+const AVATARS = ['🦊','🐺','🦋','🌊','⚡','🔥','💫','🌙','🎮','🎵','🏔️','🌸','🦁','🐉','🌈','🎯']
+
+function initAvatarPicker() {
+  const el = document.getElementById('avatar-picker')
+  if (!el) return
+  el.innerHTML = AVATARS.map((a,i) => `
+    <div onclick="selectAvatar(this,'${a}')" data-avatar="${a}" style="
+      width:44px;height:44px;border-radius:8px;display:flex;align-items:center;
+      justify-content:center;font-size:22px;background:var(--surface2);
+      border:2px solid var(--border);cursor:pointer;touch-action:manipulation;
+      transition:border-color .15s;${i===0?'border-color:var(--accent);':''}">${a}</div>
+  `).join('')
+  S._obProfile.avatar = AVATARS[0]
+}
+
+function selectAvatar(el, avatar) {
+  document.querySelectorAll('#avatar-picker > div').forEach(d => {
+    d.style.borderColor = 'var(--border)'
+  })
+  el.style.borderColor = 'var(--accent)'
+  S._obProfile.avatar = avatar
+}
+
+function checkStrength() {
+  const p = document.getElementById('ob-pass').value
+  const bar = document.getElementById('strength-bar')
+  const lbl = document.getElementById('strength-label')
+  if (!p) { bar.style.background=''; bar.style.width='0'; lbl.textContent=''; return }
+  if (p.length < 8) { bar.style.cssText='background:var(--rose);width:33%;'; lbl.textContent='Too short'; return }
+  if (p.length < 14) { bar.style.cssText='background:var(--amber);width:66%;'; lbl.textContent='Okay'; return }
+  bar.style.cssText='background:var(--accent);width:100%;'; lbl.textContent='Strong ✓'
+}
+
+async function obStep1() {
+  const p = document.getElementById('ob-pass').value
+  const p2 = document.getElementById('ob-pass2').value
+  if (p.length < 8) { toast('⚠️ Passphrase must be at least 8 characters'); return }
+  if (p !== p2) { toast('⚠️ Passphrases do not match'); return }
+  S._obPass = p
+  toast('🔑 Generating your keys...')
+  S.keys = await deriveKeys(p)
+  initAvatarPicker()
+  obShowStep(2)
+}
+
+function obStep2() {
+  const name = document.getElementById('ob-name').value.trim()
+  const handle = document.getElementById('ob-handle').value.trim()
+  if (!name) { toast('⚠️ Enter your display name'); return }
+  if (!handle) { toast('⚠️ Enter a handle'); return }
+  S._obProfile = {
+    name,
+    handle: handle.startsWith('@') ? handle : '@' + handle,
+    bio: document.getElementById('ob-bio').value.trim(),
+    avatar: S._obProfile.avatar || '🦊',
+    theme: 'default',
+  }
+  // Setup TOTP
+  S._obTotpSecret = new OTPAuth.Secret().base32
+  S._obTotp = new OTPAuth.TOTP({
+    issuer: CFG.APP,
+    label: S._obProfile.handle,
+    algorithm: 'SHA1', digits: 6, period: 30,
+    secret: OTPAuth.Secret.fromBase32(S._obTotpSecret)
+  })
+  // Render TOTP QR
+  document.getElementById('totp-qr').innerHTML = ''
+  new QRCode(document.getElementById('totp-qr'), {
+    text: S._obTotp.toString(),
+    width: 180, height: 180,
+    colorDark: '#000', colorLight: '#fff',
+  })
+  document.getElementById('totp-secret').textContent = S._obTotpSecret
+  obShowStep(3)
+}
+
+function copyTotpSecret() {
+  navigator.clipboard.writeText(S._obTotpSecret).catch(()=>{})
+  toast('📋 Secret key copied')
+}
+
+function obSkipTotp() {
+  S._obTotp = null
+  S._obTotpSecret = ''
+  finishOnboard(false)
+}
+
+function obStep3() { obShowStep(4) }
+
+function obVerifyTotp() {
+  const code = document.getElementById('totp-verify').value.trim()
+  if (code.length < 6) { toast('⚠️ Enter all 6 digits'); return }
+  const valid = S._obTotp?.validate({ token: code, window: 1 })
+  if (valid === null) {
+    document.getElementById('totp-err').style.display = 'block'
+    return
+  }
+  document.getElementById('totp-err').style.display = 'none'
+  finishOnboard(true)
+}
+
+async function finishOnboard(withTotp) {
+  S.user = S._obProfile
+  S.totpEnabled = withTotp
+  S.totpSecret = withTotp ? S._obTotpSecret : null
+  S.totp = withTotp ? S._obTotp : null
+  S.posts = []
+  S.connections = []
+  addSampleData()
+  await save()
+  startApp()
+  toast(`🎉 Welcome to PrivacyChase, ${S.user.name}!`)
+}
+
+function obShowStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('ob-s'+i)
+    if (el) el.style.display = i === n ? 'block' : 'none'
+  }
+}
+
+// ════════════════════════════════════════
+// LOGIN
+// ════════════════════════════════════════
+function resetLoginScreen() {
+  document.getElementById('login-pass-section').style.display = 'block'
+  document.getElementById('login-totp-section').style.display = 'none'
+  document.getElementById('login-passphrase').value = ''
+  document.getElementById('login-totp').value = ''
+  document.getElementById('login-totp-err').style.display = 'none'
+}
+
+async function doLogin() {
+  const p = document.getElementById('login-passphrase').value.trim()
+  if (!p) { toast('⚠️ Enter your passphrase'); return }
+  toast('🔑 Verifying...')
+  const derived = await deriveKeys(p)
+  // Verify matches stored account
+  if (S.keys?.publicKey && derived.publicKey !== S.keys.publicKey) {
+    toast('✗ Wrong passphrase')
+    return
+  }
+  S.keys = derived
+  // Recreate TOTP if needed
+  if (S.totpEnabled && S.totpSecret && !S.totp) {
+    try {
+      S.totp = new OTPAuth.TOTP({
+        issuer: CFG.APP, label: S.user?.handle || 'user',
+        algorithm: 'SHA1', digits: 6, period: 30,
+        secret: OTPAuth.Secret.fromBase32(S.totpSecret)
+      })
+    } catch(e) { S.totp = null }
+  }
+  if (S.totpEnabled && S.totp) {
+    document.getElementById('login-totp-section').style.display = 'block'
+    document.getElementById('login-totp').value = ''
+    document.getElementById('login-totp-err').style.display = 'none'
+    document.getElementById('login-totp').focus()
+  } else {
+    loginSuccess()
+  }
+}
+
+function doLoginTotp() {
+  const code = document.getElementById('login-totp').value.trim()
+  if (code.length < 6) { toast('⚠️ Enter all 6 digits'); return }
+  if (!S.totp) { loginSuccess(); return }
+  const valid = S.totp.validate({ token: code, window: 1 })
+  if (valid === null) {
+    document.getElementById('login-totp-err').style.display = 'block'
+    return
+  }
+  loginSuccess()
+}
+
+function loginSuccess() {
+  try { sessionStorage.setItem('pc_keys', JSON.stringify(S.keys)) } catch(e) {}
+  startApp()
+  toast('🔓 Welcome back, ' + S.user?.name)
+}
+
+// ════════════════════════════════════════
+// APP START
+// ════════════════════════════════════════
+function startApp() {
+  renderNav()
+  renderFeed()
+  renderProfile()
+  showTab('feed')
+  setTimeout(initP2P, 800)
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+  window.scrollTo(0, 0)
+}
+
+function showTab(tab) {
+  if (tab === 'feed') {
+    showScreen('screen-feed')
+    document.querySelectorAll('[id^="bn-"],[id^="bn2-"]').forEach(b => b.classList.remove('active'))
+    document.getElementById('bn-feed')?.classList.add('active')
+    document.getElementById('bn2-feed')?.classList.add('active')
+  } else {
+    showScreen('screen-profile')
+    renderProfile()
+    document.querySelectorAll('[id^="bn-"],[id^="bn2-"]').forEach(b => b.classList.remove('active'))
+    document.getElementById('bn-profile')?.classList.add('active')
+    document.getElementById('bn2-profile')?.classList.add('active')
+  }
+}
+
+// ════════════════════════════════════════
+// SAMPLE DATA
+// ════════════════════════════════════════
+function addSampleData() {
+  S.posts = [
+    { id:'s1', name:'NightOwlDev', handle:'@nightowldev', avatar:'🦋', body:'Just shipped PrivacyChase v1.0. No servers, no ads, no algorithm. Just real people you actually met. 🔐', time:'5m ago', likes:47, liked:false, trusted:false },
+    { id:'s2', name:'WaveRider', handle:'@waverider', avatar:'🌊', body:'In-person connections only. Scanned 3 people at the meetup tonight. This is what social should have always been.', time:'23m ago', likes:89, liked:false, trusted:true },
+  ]
+}
+
+// ════════════════════════════════════════
+// FEED
+// ════════════════════════════════════════
+function renderFeed() {
+  const el = document.getElementById('post-feed')
+  if (!el) return
+  if (!S.posts.length) {
+    el.innerHTML = `<div class="empty">
+      <div class="empty-icon">🌐</div>
+      <div class="empty-title">No posts yet</div>
+      <div class="empty-sub">Connect with people in person to see their posts.<br>Use the 📷 button to scan someone's QR.</div>
+    </div>`
+    return
+  }
+  el.innerHTML = S.posts.map(postHTML).join('')
+}
+
+function postHTML(p) {
+  return `<div class="post fade-up" id="post-${p.id}">
+    <div class="post-head">
+      <div class="post-avi" style="background:var(--surface2)">${p.avatar||'👤'}</div>
+      <div style="flex:1">
+        <div class="post-name">${p.name} <span class="badge badge-green" style="font-size:.5rem;">E2E</span>${p.trusted?'<span class="badge badge-blue" style="font-size:.5rem;margin-left:3px;">trusted</span>':''}</div>
+        <div class="post-handle">${p.handle}</div>
+      </div>
+      <div class="post-time">${p.time}</div>
+    </div>
+    ${p.location ? `<div class="post-loc">📍 ${p.location}</div>` : ''}
+    <div class="post-body">${p.body}</div>
+    <div class="post-actions">
+      <button class="post-action ${p.liked?'liked':''}" onclick="likePost('${p.id}')">${p.liked?'❤️':'🤍'} ${p.likes||0}</button>
+      <button class="post-action" onclick="toast('💬 Comments coming in v1.1')">💬 ${p.comments||0}</button>
+    </div>
+  </div>`
+}
+
+function likePost(id) {
+  const p = S.posts.find(x => x.id === id)
+  if (!p) return
+  p.liked = !p.liked
+  p.likes = (p.likes||0) + (p.liked ? 1 : -1)
+  renderFeed(); save()
+}
+
+let _locEnabled = false, _locVal = null
+
+function toggleLoc() {
+  if (_locEnabled) {
+    _locEnabled = false; _locVal = null
+    document.getElementById('loc-btn').textContent = '📍 Add location'
+    toast('📍 Location removed')
+    return
+  }
+  if (!navigator.geolocation) { toast('📍 Not supported'); return }
+  navigator.geolocation.getCurrentPosition(pos => {
+    _locEnabled = true
+    _locVal = `${pos.coords.latitude.toFixed(3)}, ${pos.coords.longitude.toFixed(3)}`
+    document.getElementById('loc-btn').textContent = '📍 ' + _locVal
+    toast('📍 Location added')
+  }, () => toast('📍 Location denied'))
+}
+
+async function submitPost() {
+  const text = document.getElementById('compose-text').value.trim()
+  if (!text) { toast('⚠️ Write something first'); return }
+  const post = {
+    id: 'p_' + Date.now(),
+    name: S.user.name,
+    handle: S.user.handle,
+    avatar: S.user.avatar || '🦊',
+    body: text,
+    time: 'just now',
+    likes: 0, liked: false, comments: 0,
+    location: _locVal || null,
+    trusted: true,
+    ts: Date.now(),
+  }
+  S.posts.unshift(post)
+  document.getElementById('compose-text').value = ''
+  document.getElementById('stat-posts').textContent = S.posts.filter(p => p.handle === S.user?.handle).length
+  renderFeed(); await save()
+  toast('🔐 Post encrypted and broadcast')
+}
+
+// ════════════════════════════════════════
+// PROFILE
+// ════════════════════════════════════════
+function renderNav() {
+  const avi = document.getElementById('feed-avi')
+  const cavi = document.getElementById('compose-avi')
+  if (avi && S.user) avi.textContent = S.user.avatar || '🦊'
+  if (cavi && S.user) cavi.textContent = S.user.avatar || '🦊'
+}
+
+function renderProfile() {
+  if (!S.user) return
+  document.getElementById('profile-avi').textContent = S.user.avatar || '🦊'
+  document.getElementById('profile-name').textContent = S.user.name || '—'
+  document.getElementById('profile-handle').textContent = S.user.handle || '—'
+  document.getElementById('profile-bio').textContent = S.user.bio || 'No bio yet.'
+  document.getElementById('stat-connections').textContent = S.connections.length
+  document.getElementById('stat-posts').textContent = S.posts.filter(p => p.handle === S.user?.handle).length
+  renderProfilePosts()
+  renderConnections()
+}
+
+function renderProfilePosts() {
+  const el = document.getElementById('ptab-posts')
+  if (!el) return
+  const mine = S.posts.filter(p => p.handle === S.user?.handle)
+  el.innerHTML = mine.length ? mine.map(postHTML).join('') : `<div class="empty"><div class="empty-icon">✏️</div><div class="empty-title">No posts yet</div><div class="empty-sub">Share something!</div></div>`
+}
+
+function renderConnections() {
+  const el = document.getElementById('ptab-connections')
+  if (!el) return
+  if (!S.connections.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🤝</div><div class="empty-title">No connections yet</div><div class="empty-sub">Scan someone's QR code in person to connect.</div></div>`
+    return
+  }
+  el.innerHTML = S.connections.map(c => `
+    <div class="conn-row">
+      <div class="conn-avi" style="background:var(--surface2)">${c.avatar||'👤'}</div>
+      <div style="flex:1">
+        <div class="conn-name">${c.name}</div>
+        <div class="conn-meta">📍 ${c.location||'Unknown'} · ${timeAgo(c.connectedAt)}</div>
+      </div>
+      <div class="conn-online" style="background:${Math.random()>.4?'var(--accent)':'var(--muted)'}"></div>
+    </div>
+  `).join('')
+}
+
+function switchProfileTab(el, tabId) {
+  document.querySelectorAll('#screen-profile .tab').forEach(t => t.classList.remove('active'))
+  el.classList.add('active')
+  ;['ptab-posts','ptab-connections','ptab-key'].forEach(id => {
+    document.getElementById(id).style.display = id === tabId ? 'block' : 'none'
+  })
+  if (tabId === 'ptab-key') renderProfileQR()
+}
+
+function renderProfileQR() {
+  if (!S.keys?.publicKey) return
+  const el = document.getElementById('profile-qr')
+  if (el && !el.innerHTML) {
+    new QRCode(el, { text: S.keys.publicKey, width: 160, height: 160, colorDark:'#000', colorLight:'#fff' })
+  }
+  const kv = document.getElementById('profile-key-val')
+  if (kv) {
+    const k = S.keys.publicKey
+    kv.innerHTML = `<span class="hi">${k.slice(0,8)}</span>${k.slice(8,36)}...`
+  }
+}
+
+// ════════════════════════════════════════
+// QR SCANNER
+// ════════════════════════════════════════
+function startScanner() {
+  if (!window.isSecureContext && location.hostname !== 'localhost') {
+    toast('📷 Camera requires HTTPS — use paste key instead')
+    return
+  }
+  if (!S.scanner) S.scanner = new Html5Qrcode('qr-reader')
+  navigator.mediaDevices?.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      stream.getTracks().forEach(t => t.stop())
+      S.scanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 200, height: 200 } },
+        text => handleScan(text),
+        () => {}
+      ).catch(err => {
+        const el = document.getElementById('qr-reader')
+        if (el) el.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);font-size:.8rem;">📷 Camera blocked.<br>Use paste key below.</div>'
+      })
+    })
+    .catch(() => {
+      const el = document.getElementById('qr-reader')
+      if (el) el.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);font-size:.8rem;">📷 Allow camera access<br>or paste key below.</div>'
+    })
+}
+
+function stopScanner() {
+  if (S.scanner) S.scanner.stop().catch(() => {})
+}
+
+function handleScan(text) {
+  stopScanner()
+  if (text.startsWith('pc1_pub_')) {
+    S.scanData = text
+    document.getElementById('scan-result-text').textContent = '✅ Key scanned — fill in details below'
+    document.getElementById('scan-result').style.display = 'block'
+    document.getElementById('scan-name').focus()
+    return
+  }
+  // Check if it's a login QR from another PC session
+  try {
+    const data = JSON.parse(text)
+    if (data.t === 'pcl') {
+      // PC is waiting — broadcast our keys to it
+      handlePCLoginQR(data)
+      return
+    }
+  } catch(e) {}
+  toast('⚠️ Not a valid PrivacyChase QR')
+}
+
+function pasteConnect() {
+  const key = document.getElementById('paste-key').value.trim()
+  if (!key.startsWith('pc1_pub_')) { toast('⚠️ Invalid key format'); return }
+  S.scanData = key
+  document.getElementById('scan-result-text').textContent = '✅ Key entered — fill in details'
+  document.getElementById('scan-result').style.display = 'block'
+}
+
+async function confirmConnect() {
+  if (!S.scanData) return
+  const name = document.getElementById('scan-name').value.trim() || 'Unknown'
+  const location = document.getElementById('scan-location').value.trim() || 'Unknown location'
+  const conn = {
+    id: 'c_' + Date.now(),
+    name, location,
+    handle: '@' + name.toLowerCase().replace(/\s/g,''),
+    avatar: AVATARS[Math.floor(Math.random() * AVATARS.length)],
+    publicKey: S.scanData,
+    connectedAt: Date.now(),
+  }
+  S.connections.push(conn)
+  S.scanData = null
+  document.getElementById('scan-result').style.display = 'none'
+  document.getElementById('scan-name').value = ''
+  document.getElementById('scan-location').value = ''
+  await save()
+  renderProfile()
+  closeModal('scan')
+  toast(`🤝 Connected with ${name} at ${location}!`)
+}
+
+// ════════════════════════════════════════
+// MY KEY / LOGIN QR
+// ════════════════════════════════════════
+function openMyKeyModal() {
+  if (!S.keys?.publicKey) return
+  const el = document.getElementById('my-key-qr')
+  el.innerHTML = ''
+  new QRCode(el, { text: S.keys.publicKey, width: 200, height: 200, colorDark:'#000', colorLight:'#fff' })
+  const kv = document.getElementById('my-key-val')
+  const k = S.keys.publicKey
+  kv.innerHTML = `<span class="hi">${k.slice(0,8)}</span>${k.slice(8,44)}...`
+}
+
+function copyMyKey() {
+  navigator.clipboard.writeText(S.keys?.publicKey || '').catch(() => {})
+  toast('🔑 Public key copied!')
+}
+
+function shareMyKey() {
+  if (navigator.share && S.keys?.publicKey) {
+    navigator.share({ title: 'My PrivacyChase Key', text: S.keys.publicKey })
+  } else copyMyKey()
+}
+
+async function generateLoginQR() {
+  const el = document.getElementById('login-qr-code')
+  const shortEl = document.getElementById('login-short-code')
+  if (!el || !S.keys?.publicKey) return
+
+  const shortCode = S.keys.publicKey.slice(8,12).toUpperCase() + '-' + S.keys.publicKey.slice(12,16).toUpperCase()
+  if (shortEl) shortEl.textContent = shortCode
+
+  const qrData = JSON.stringify({
+    t: 'pcl',
+    pub: S.keys.publicKey,
+    name: S.user?.name || '',
+    handle: S.user?.handle || '',
+    avatar: S.user?.avatar || '🦊',
+  })
+
+  await new Promise(r => setTimeout(r, 150))
+  await new Promise(r => requestAnimationFrame(r))
+  el.innerHTML = ''
+  try {
+    new QRCode(el, { text: qrData, width: 200, height: 200, colorDark:'#000', colorLight:'#fff' })
+  } catch(e) {
+    el.innerHTML = `<div style="font-size:.7rem;color:var(--rose);padding:10px;">QR error</div>`
+  }
+}
+
+// PC detected phone's login QR
+function handlePCLoginQR(data) {
+  toast('🖥️ PC detected — linking...')
+  // Broadcast our public key so PC can mirror
+  broadcastP2P({ type: 'pc_link', pub: data.pub, userPub: S.keys?.publicKey, user: S.user })
+}
+
+// ════════════════════════════════════════
+// PC WAITING SCREEN
+// ════════════════════════════════════════
+let _pcSessionId = null
+let _pcQRGenerated = false
+
+async function initPCWaiting() {
+  // Generate a session ID for this PC session
+  _pcSessionId = hex(crypto.getRandomValues(new Uint8Array(16)))
+
+  const qrData = JSON.stringify({
+    t: 'pcw', // PC waiting
+    sid: _pcSessionId,
+    ts: Date.now(),
+  })
+
+  await new Promise(r => setTimeout(r, 200))
+  await new Promise(r => requestAnimationFrame(r))
+
+  const el = document.getElementById('pc-wait-qr')
+  if (!el) return
+  el.innerHTML = ''
+  try {
+    new QRCode(el, { text: qrData, width: 220, height: 220, colorDark:'#000', colorLight:'#fff' })
+    _pcQRGenerated = true
+  } catch(e) {
+    el.innerHTML = `<div style="font-family:monospace;font-size:.65rem;color:#666;padding:10px;text-align:center;">Open on your phone</div>`
+  }
+
+  // Start P2P listening for phone
+  initPCSync()
+}
+
+function initPCSync() {
+  // Listen via BroadcastChannel (same browser) and WebTorrent for cross-device
+  try {
+    const bc = new BroadcastChannel('pc_social_pc_wait')
+    bc.onmessage = e => {
+      if (e.data?.type === 'phone_linked' && e.data?.user) {
+        phoneLinkedToPC(e.data)
+      }
+    }
+  } catch(e) {}
+
+  // Also start WebTorrent listener for cross-network phone detection
+  initP2PForPC()
+}
+
+async function initP2PForPC() {
+  if (typeof WebTorrent === 'undefined') return
+  try {
+    const enc = new TextEncoder()
+    const hashBuf = await crypto.subtle.digest('SHA-1', enc.encode('pc_wait_' + _pcSessionId))
+    const infoHash = hex(new Uint8Array(hashBuf)).slice(0, 40)
+    const wt = new WebTorrent()
+    const magnetURI = `magnet:?xt=urn:btih:${infoHash}&tr=${CFG.TRACKERS.map(encodeURIComponent).join('&tr=')}`
+    wt.add(magnetURI, { announce: CFG.TRACKERS }, torrent => {
+      torrent.on('wire', wire => {
+        // Phone connected — receive user data
+        wire.on('data', buf => {
+          try {
+            const data = JSON.parse(new TextDecoder().decode(buf))
+            if (data?.type === 'phone_linked') phoneLinkedToPC(data)
+          } catch(e) {}
+        })
+      })
+    })
+  } catch(e) {}
+}
+
+function phoneLinkedToPC(data) {
+  document.getElementById('pc-pulse').classList.add('connected')
+  document.getElementById('pc-status-text').textContent = `✅ ${data.user?.name || 'Phone'} connected!`
+  setTimeout(() => {
+    // Load user data and go to app
+    if (data.user) S.user = data.user
+    if (data.keys) S.keys = data.keys
+    if (data.posts) S.posts = data.posts
+    if (data.connections) S.connections = data.connections
+    save().then(() => { startApp() })
+  }, 1000)
+}
+
+// ════════════════════════════════════════
+// P2P — WEBTORRENT
+// ════════════════════════════════════════
+let _wtClient = null
+
+async function initP2P() {
+  if (!S.keys?.publicKey) return
+  if (typeof WebTorrent === 'undefined') {
+    setP2P('off', 'P2P unavailable — use profile code to sync')
+    return
+  }
+
+  setP2P('trying', 'Connecting to sync network...')
+
+  try {
+    const enc = new TextEncoder()
+    const hashBuf = await crypto.subtle.digest('SHA-1', enc.encode('pc_sync_' + S.keys.publicKey))
+    const infoHash = hex(new Uint8Array(hashBuf)).slice(0, 40)
+
+    _wtClient = new WebTorrent()
+    const magnetURI = `magnet:?xt=urn:btih:${infoHash}&tr=${CFG.TRACKERS.map(encodeURIComponent).join('&tr=')}`
+
+    _wtClient.add(magnetURI, { announce: CFG.TRACKERS }, torrent => {
+      setP2P('on', 'Sync ready — open app on another device to sync')
+
+      torrent.on('wire', async wire => {
+        S.peers++
+        document.getElementById('p2p-peers').textContent = S.peers + ' peer' + (S.peers !== 1 ? 's' : '')
+        setP2P('on', 'Device found — syncing...')
+
+        // Send our data
+        const blob = await buildSyncBlob()
+        if (blob) {
+          try { wire.write(blob) } catch(e) {}
+        }
+
+        // Receive data
+        const chunks = []
+        wire.on('data', chunk => chunks.push(chunk))
+        wire.on('end', async () => {
+          const buf = Buffer.concat ? Buffer.concat(chunks) : new Uint8Array(chunks.flatMap(c => [...c]))
+          await receiveSyncBlob(buf)
+        })
+      })
+
+      torrent.on('noPeers', () => {
+        setP2P('on', 'Sync ready — no other devices online yet')
+      })
+    })
+
+    _wtClient.on('error', () => {
+      setP2P('off', 'Sync unavailable — use Profile Code to sync manually')
+    })
+  } catch(e) {
+    setP2P('off', 'Sync unavailable')
+  }
+}
+
+async function buildSyncBlob() {
+  try {
+    const payload = JSON.stringify({
+      v: '1', pubKey: S.keys.publicKey,
+      user: S.user,
+      posts: S.posts.slice(0, 50),
+      connections: S.connections,
+      ts: Date.now(),
+    })
+    return new TextEncoder().encode(payload)
+  } catch(e) { return null }
+}
+
+async function receiveSyncBlob(buf) {
+  try {
+    const payload = JSON.parse(new TextDecoder().decode(buf))
+    if (payload.pubKey !== S.keys.publicKey) return
+    let count = 0
+    if (payload.user && !S.user?.bio && payload.user.bio) { S.user = { ...S.user, ...payload.user }; count++ }
+    const pids = new Set(S.posts.map(p => p.id))
+    const np = (payload.posts || []).filter(p => !pids.has(p.id))
+    if (np.length) { S.posts = [...np, ...S.posts].slice(0, 200); count += np.length }
+    const ckeys = new Set(S.connections.map(c => c.publicKey))
+    const nc = (payload.connections || []).filter(c => !ckeys.has(c.publicKey))
+    if (nc.length) { S.connections = [...S.connections, ...nc]; count += nc.length }
+    if (count > 0) {
+      await save()
+      renderFeed(); renderProfile()
+      toast('🔄 Synced ' + count + ' items from your other device!')
+    }
+  } catch(e) {}
+}
+
+function broadcastP2P(msg) {
+  try {
+    const bc = new BroadcastChannel('pc_social_pc_wait')
+    bc.postMessage({ ...msg, type: 'phone_linked', user: S.user, keys: S.keys, posts: S.posts, connections: S.connections })
+  } catch(e) {}
+}
+
+function setP2P(status, text) {
+  S.p2pStatus = status
+  const dot = document.getElementById('p2p-dot')
+  const txt = document.getElementById('p2p-text')
+  const settingsStatus = document.getElementById('settings-p2p-status')
+  if (dot) dot.className = 'p2p-dot ' + (status === 'on' ? 'on' : status === 'trying' ? 'trying' : 'off')
+  if (txt) txt.textContent = text
+  if (settingsStatus) settingsStatus.textContent = text
+}
+
+// ════════════════════════════════════════
+// SYNC CODE (manual copy/paste)
+// ════════════════════════════════════════
+async function generateSyncCode() {
+  const btn = event?.target
+  if (btn) { btn.textContent = 'Generating...'; btn.disabled = true }
+  try {
+    const payload = JSON.stringify({
+      v: '1', t: Date.now(),
+      user: S.user, pubKey: S.keys?.publicKey,
+      totpSecret: S.totpSecret, totpEnabled: S.totpEnabled,
+      posts: S.posts.slice(0, 100),
+      connections: S.connections,
+    })
+    const enc = new TextEncoder()
+    const iv = crypto.getRandomValues(new Uint8Array(12))
+    const keyBuf = unhex(S.keys.privateKey.slice(0, 64))
+    const ck = await crypto.subtle.importKey('raw', keyBuf, 'AES-GCM', false, ['encrypt'])
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, ck, enc.encode(payload))
+    const combined = new Uint8Array(12 + ct.byteLength)
+    combined.set(iv); combined.set(new Uint8Array(ct), 12)
+    const code = 'PC1:' + b64(combined.buffer)
+    document.getElementById('sync-code-output').value = code
+    const st = document.getElementById('sync-code-status')
+    if (st) { st.style.display='block'; st.style.color='var(--accent)'; st.textContent='✅ Code generated — copy and paste on other device' }
+  } catch(e) { toast('⚠️ Failed to generate code') }
+  if (btn) { btn.textContent = 'Generate'; btn.disabled = false }
+}
+
+function copySyncCode() {
+  const v = document.getElementById('sync-code-output')?.value
+  if (!v) { toast('⚠️ Generate a code first'); return }
+  navigator.clipboard.writeText(v).catch(() => { document.getElementById('sync-code-output').select(); document.execCommand('copy') })
+  toast('📋 Copied — paste on your other device')
+}
+
+async function importSyncCode() {
+  const code = document.getElementById('sync-code-input')?.value?.trim()
+  const pass = document.getElementById('sync-code-pass')?.value?.trim()
+  const st = document.getElementById('sync-code-status')
+  if (!code) { toast('⚠️ Paste a code first'); return }
+  if (!pass) { toast('⚠️ Enter your passphrase'); return }
+  if (!code.startsWith('PC1:')) { toast('⚠️ Invalid code format'); return }
+  if (st) { st.style.display='block'; st.style.color='var(--amber)'; st.textContent='🔑 Decrypting...' }
+  try {
+    const derived = await deriveKeys(pass)
+    const raw = unb64(code.slice(4))
+    const iv = raw.slice(0, 12), ct = raw.slice(12)
+    const keyBuf = unhex(derived.privateKey.slice(0, 64))
+    const ck = await crypto.subtle.importKey('raw', keyBuf, 'AES-GCM', false, ['decrypt'])
+    let pt
+    try { pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, ck, ct) }
+    catch(e) { if(st){st.style.color='var(--rose)';st.textContent='✗ Wrong passphrase — decryption failed'} return }
+    const payload = JSON.parse(new TextDecoder().decode(pt))
+    if (payload.pubKey && payload.pubKey !== derived.publicKey) {
+      if(st){st.style.color='var(--rose)';st.textContent='✗ Passphrase does not match this code'} return
+    }
+    S.keys = derived
+    if (payload.user) S.user = payload.user
+    if (payload.totpSecret) {
+      S.totpSecret = payload.totpSecret
+      S.totpEnabled = payload.totpEnabled || false
+      S.totp = new OTPAuth.TOTP({ issuer:CFG.APP, label:S.user?.handle||'user', algorithm:'SHA1', digits:6, period:30, secret:OTPAuth.Secret.fromBase32(payload.totpSecret) })
+    }
+    if (payload.posts) { const ex=new Set(S.posts.map(p=>p.id)); S.posts=[...payload.posts.filter(p=>!ex.has(p.id)),...S.posts].slice(0,200) }
+    if (payload.connections) { const ex=new Set(S.connections.map(c=>c.publicKey)); S.connections=[...S.connections,...payload.connections.filter(c=>!ex.has(c.publicKey))] }
+    await save()
+    if(st){st.style.color='var(--accent)';st.textContent='✅ Synced! '+S.posts.length+' posts loaded'}
+    setTimeout(() => { closeModal('sync-code'); startApp(); toast('✅ Synced! Welcome, '+S.user?.name) }, 800)
+  } catch(e) { if(st){st.style.color='var(--rose)';st.textContent='✗ Import failed'} }
+}
+
+// ════════════════════════════════════════
+// BACKUP
+// ════════════════════════════════════════
+function exportBackup() {
+  const data = { user:S.user, keys:S.keys, totpSecret:S.totpSecret, totpEnabled:S.totpEnabled, posts:S.posts, connections:S.connections, exportedAt:new Date().toISOString(), v:CFG.VER }
+  const blob = new Blob([JSON.stringify(data,null,2)], { type:'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = 'privacychase-backup-' + Date.now() + '.json'; a.click()
+  URL.revokeObjectURL(url)
+  toast('💾 Backup exported!')
+}
+
+function importBackup() { document.getElementById('backup-input').click() }
+
+async function handleBackupImport(e) {
+  const file = e.target.files[0]; if (!file) return
+  try {
+    const data = JSON.parse(await file.text())
+    if (!data.user || !data.keys) { toast('⚠️ Invalid backup file'); return }
+    if (!confirm(`Import backup from ${new Date(data.exportedAt).toLocaleDateString()}?`)) return
+    S.user = data.user; S.keys = data.keys; S.totpSecret = data.totpSecret
+    S.totpEnabled = data.totpEnabled || false; S.posts = data.posts || []; S.connections = data.connections || []
+    if (S.totpEnabled && S.totpSecret) {
+      S.totp = new OTPAuth.TOTP({ issuer:CFG.APP, label:S.user.handle, algorithm:'SHA1', digits:6, period:30, secret:OTPAuth.Secret.fromBase32(S.totpSecret) })
+    }
+    await save(); closeModal('settings'); startApp(); toast('✅ Backup imported!')
+  } catch(err) { toast('⚠️ Failed to import backup') }
+}
+
+// ════════════════════════════════════════
+// MODALS
+// ════════════════════════════════════════
+function openModal(name) {
+  const el = document.getElementById('modal-' + name)
+  if (!el) return
+  el.classList.add('open')
+  if (name === 'scan') setTimeout(startScanner, 300)
+  if (name === 'my-key') openMyKeyModal()
+  if (name === 'login-qr') setTimeout(generateLoginQR, 100)
+  if (name === 'settings') updateSettingsStatus()
+  if (name === 'sync-code') {
+    const st = document.getElementById('sync-code-status')
+    if (st) st.style.display = 'none'
+    const out = document.getElementById('sync-code-output')
+    if (out) out.value = ''
+  }
+}
+
+function closeModal(name) {
+  const el = document.getElementById('modal-' + name)
+  if (el) el.classList.remove('open')
+  if (name === 'scan') stopScanner()
+}
+
+function updateSettingsStatus() {
+  const p2p = document.getElementById('settings-p2p-status')
+  if (p2p) p2p.textContent = S.p2pStatus === 'on' ? 'Connected' : S.p2pStatus === 'trying' ? 'Connecting...' : 'Offline'
+  const st = document.getElementById('settings-storage')
+  if (st) {
+    navigator.storage?.estimate().then(e => {
+      st.textContent = `IndexedDB · ${Math.round((e.usage||0)/1024)}KB`
+    }).catch(() => { st.textContent = 'IndexedDB' })
+  }
+}
+
+// Close on backdrop click
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => {
+    if (e.target === o) {
+      const name = o.id.replace('modal-','')
+      closeModal(name)
+    }
+  })
+})
+
+// ════════════════════════════════════════
+// SIGN OUT
+// ════════════════════════════════════════
+function confirmSignOut() {
+  if (!confirm('Sign out? Use your passphrase to get back in.')) return
+  sessionStorage.clear()
+  indexedDB.deleteDatabase(CFG.DB)
+  location.reload()
+}
+
+// ════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════
+let _toastTimer = null
+function toast(msg) {
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.classList.add('show')
+  clearTimeout(_toastTimer)
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 3500)
+}
+
+// ════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000)
+  if (s < 60) return 'just now'
+  if (s < 3600) return Math.floor(s/60) + 'm ago'
+  if (s < 86400) return Math.floor(s/3600) + 'h ago'
+  return Math.floor(s/86400) + 'd ago'
+}
+
+function isMobile() {
+  return /android|iphone|ipad|ipod/i.test(navigator.userAgent) || window.innerWidth < 768
+}
+
+// ════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async () => {
+  const mobile = isMobile()
+  const ok = await loadData()
+
+  if (ok && S.user) {
+    // Try sessionStorage restore first (survives refresh)
+    try {
+      const cached = JSON.parse(sessionStorage.getItem('pc_keys') || 'null')
+      if (cached?.privateKey && cached?.publicKey) {
+        S.keys = cached
+        startApp()
+        return
+      }
+    } catch(e) {}
+
+    // Need to log in
+    resetLoginScreen()
+    showScreen('screen-login')
+  } else {
+    // No account yet
+    if (mobile) {
+      // Mobile → go to onboarding
+      showScreen('screen-onboard')
+    } else {
+      // PC → show waiting screen with QR
+      showScreen('screen-pc-wait')
+      setTimeout(initPCWaiting, 300)
+    }
+  }
+})
+</script>
+</body>
+</html>
