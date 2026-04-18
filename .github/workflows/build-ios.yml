@@ -3,16 +3,12 @@ name: Build iOS IPA
 on:
   push:
     branches: [main]
-    paths:
-      - 'web/**'
-      - 'capacitor/**'
-      - '.github/workflows/build-ios.yml'
   workflow_dispatch:
 
 jobs:
   build-ios:
     runs-on: macos-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,59 +17,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: capacitor/package-lock.json
 
-      - name: Install dependencies
+      - name: Install Capacitor dependencies
         working-directory: capacitor
-        run: npm ci
+        run: npm install
 
-      - name: Sync Capacitor
+      - name: Add iOS platform
+        working-directory: capacitor
+        run: npx cap add ios
+
+      - name: Sync web files into iOS
         working-directory: capacitor
         run: npx cap sync ios
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
-          bundler-cache: true
-          working-directory: capacitor/ios/App
+      - name: Add camera permission to Info.plist
+        working-directory: capacitor/ios/App
+        run: |
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'PrivacyChase needs camera access to scan QR codes for in-person connections.'" App/Info.plist || \
+          /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription 'PrivacyChase needs camera access to scan QR codes for in-person connections.'" App/Info.plist
 
       - name: Install CocoaPods
         working-directory: capacitor/ios/App
         run: pod install
 
-      - name: Import signing certificate
-        env:
-          BUILD_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
-          P12_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
-          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-        run: |
-          # Create variables
-          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
-          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-
-          # Import certificate and provisioning profile from secrets
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
-          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
-
-          # Create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-
-          # Import certificate to keychain
-          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
-
-          # Apply provisioning profile
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
-
-      - name: Build IPA (Development - no signing required)
-        if: ${{ !secrets.IOS_CERTIFICATE_BASE64 }}
+      - name: Build unsigned IPA
         working-directory: capacitor
         run: |
           xcodebuild \
@@ -84,56 +51,21 @@ jobs:
             -destination 'generic/platform=iOS' \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            EXPANDED_CODE_SIGN_IDENTITY="" \
             -archivePath $RUNNER_TEMP/App.xcarchive \
             archive
-          
-          # Export as unsigned IPA for sideloading
-          mkdir -p $RUNNER_TEMP/ipa
-          cd $RUNNER_TEMP/App.xcarchive/Products/Applications
-          mkdir Payload
-          cp -r *.app Payload/
-          zip -r $RUNNER_TEMP/ipa/PrivacyChase-unsigned.ipa Payload/
 
-      - name: Build IPA (Signed)
-        if: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
-        working-directory: capacitor
+      - name: Package IPA
         run: |
-          xcodebuild \
-            -workspace ios/App/App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -archivePath $RUNNER_TEMP/App.xcarchive \
-            archive
-          
-          xcodebuild \
-            -exportArchive \
-            -archivePath $RUNNER_TEMP/App.xcarchive \
-            -exportOptionsPlist capacitor/ios/ExportOptions.plist \
-            -exportPath $RUNNER_TEMP/ipa
+          mkdir -p $RUNNER_TEMP/ipa/Payload
+          cp -r $RUNNER_TEMP/App.xcarchive/Products/Applications/*.app $RUNNER_TEMP/ipa/Payload/
+          cd $RUNNER_TEMP/ipa
+          zip -r PrivacyChase-unsigned.ipa Payload/
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PrivacyChase-iOS-${{ github.sha }}
-          path: |
-            /tmp/ipa/*.ipa
+          name: PrivacyChase-iOS-${{ github.run_number }}
+          path: ${{ runner.temp }}/ipa/PrivacyChase-unsigned.ipa
           retention-days: 30
-
-      - name: Create Release
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ios-${{ github.run_number }}
-          name: iOS Build ${{ github.run_number }}
-          draft: false
-          prerelease: true
-          files: /tmp/ipa/*.ipa
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Clean up keychain
-        if: always()
-        run: |
-          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db 2>/dev/null || true

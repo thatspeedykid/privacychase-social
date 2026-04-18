@@ -604,23 +604,21 @@ textarea.form-input{resize:none;min-height:80px;}
     <div style="display:flex;flex-direction:column;gap:8px;">
       <div class="shield">
         <div class="shield-icon">🛡️</div>
-        <div><div class="shield-title">Encryption</div><div class="shield-sub">AES-256-GCM · PBKDF2 · Ed25519</div></div>
+        <div><div class="shield-title">Encryption</div><div class="shield-sub">AES-256-GCM · PBKDF2 · 200k iterations</div></div>
       </div>
       <div class="shield">
         <div class="shield-icon">🌐</div>
-        <div><div class="shield-title">P2P Status</div><div class="shield-sub" id="settings-p2p-status">Connecting...</div></div>
+        <div><div class="shield-title">P2P Sync</div><div class="shield-sub" id="settings-p2p-status">Connecting...</div></div>
       </div>
       <div class="shield">
         <div class="shield-icon">💾</div>
-        <div><div class="shield-title">Storage</div><div class="shield-sub" id="settings-storage">IndexedDB</div></div>
+        <div><div class="shield-title">Storage</div><div class="shield-sub" id="settings-storage">IndexedDB · encrypted</div></div>
       </div>
       <div class="divider"></div>
-      <!-- Show Login QR - for PC mirroring -->
-      <button class="btn btn-primary btn-full" onclick="openModal('login-qr');closeModal('settings')" style="touch-action:manipulation;">🔑 Show Login QR for PC</button>
-      <button class="btn btn-ghost btn-full" onclick="openModal('sync-code');closeModal('settings')" style="touch-action:manipulation;">🔄 Sync to Another Device</button>
-      <button class="btn btn-ghost btn-full" onclick="openModal('my-key');closeModal('settings')" style="touch-action:manipulation;">My Public Key</button>
-      <button class="btn btn-ghost btn-full" onclick="exportBackup()" style="touch-action:manipulation;">Export Backup</button>
-      <button class="btn btn-ghost btn-full" onclick="importBackup()" style="touch-action:manipulation;">Import Backup</button>
+      <button class="btn btn-primary btn-full" onclick="openModal('login-qr');closeModal('settings')" style="touch-action:manipulation;">🖥️ Mirror to PC</button>
+      <button class="btn btn-ghost btn-full" onclick="openModal('my-key');closeModal('settings')" style="touch-action:manipulation;">🔑 My Public Key / QR</button>
+      <button class="btn btn-ghost btn-full" onclick="exportBackup()" style="touch-action:manipulation;">💾 Export Backup</button>
+      <button class="btn btn-ghost btn-full" onclick="importBackup()" style="touch-action:manipulation;">📥 Import Backup</button>
       <div class="divider"></div>
       <button class="btn btn-danger btn-full" onclick="confirmSignOut()" style="touch-action:manipulation;">Sign Out</button>
     </div>
@@ -1225,28 +1223,40 @@ function renderProfileQR() {
 // QR SCANNER
 // ════════════════════════════════════════
 function startScanner() {
-  if (!window.isSecureContext && location.hostname !== 'localhost') {
-    toast('📷 Camera requires HTTPS — use paste key instead')
+  const readerEl = document.getElementById('qr-reader')
+
+  // On Capacitor native (iOS/Android) — request permission via plugin first
+  if (window.Capacitor?.isNativePlatform()) {
+    // Native: use Html5Qrcode which works inside WKWebView with proper permissions
+    if (readerEl) readerEl.innerHTML = ''
+    if (!S.scanner) S.scanner = new Html5Qrcode('qr-reader')
+    S.scanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 220, height: 220 } },
+      text => handleScan(text),
+      () => {}
+    ).catch(err => {
+      console.warn('Native scanner error:', err)
+      if (readerEl) readerEl.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);font-size:.8rem;">📷 Camera permission denied.<br><br>Go to Settings → PrivacyChase → Camera → Allow.</div>'
+    })
     return
   }
+
+  // Web browser
+  if (!window.isSecureContext && location.hostname !== 'localhost') {
+    if (readerEl) readerEl.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);font-size:.8rem;">📷 Camera requires HTTPS.<br><br>Use paste key below.</div>'
+    return
+  }
+
   if (!S.scanner) S.scanner = new Html5Qrcode('qr-reader')
-  navigator.mediaDevices?.getUserMedia({ video: { facingMode: 'environment' } })
-    .then(stream => {
-      stream.getTracks().forEach(t => t.stop())
-      S.scanner.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 200, height: 200 } },
-        text => handleScan(text),
-        () => {}
-      ).catch(err => {
-        const el = document.getElementById('qr-reader')
-        if (el) el.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);font-size:.8rem;">📷 Camera blocked.<br>Use paste key below.</div>'
-      })
-    })
-    .catch(() => {
-      const el = document.getElementById('qr-reader')
-      if (el) el.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);font-size:.8rem;">📷 Allow camera access<br>or paste key below.</div>'
-    })
+  S.scanner.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 220, height: 220 } },
+    text => handleScan(text),
+    () => {}
+  ).catch(() => {
+    if (readerEl) readerEl.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);font-size:.8rem;">📷 Allow camera access in browser settings.<br><br>Or paste key below.</div>'
+  })
 }
 
 function stopScanner() {

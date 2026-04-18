@@ -11,7 +11,8 @@
     "backgroundColor": "#0a0a0f",
     "contentInset": "always",
     "allowsLinkPreview": false,
-    "scrollEnabled": false
+    "scrollEnabled": false,
+    "NSCameraUsageDescription": "PrivacyChase needs camera access to scan QR codes for in-person connections."
   },
   "android": {
     "backgroundColor": "#0a0a0f",
@@ -42,7 +43,9 @@
       "resizeOnFullScreen": true
     },
     "Camera": {
-      "permissions": ["camera"]
+      "permissions": [
+        "camera"
+      ]
     }
   }
 }
