@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#08080f"/>
+<title>PrivacyChase Social</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Syne+Mono&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/otpauth/9.3.6/otpauth.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overscroll-behavior:none;}
+:root{
+  --bg:#08080f;
+  --s1:#0f0f1c;
+  --s2:#16162a;
+  --b:#1e1e38;
+  --t:#f0f0ff;
+  --m:#555575;
+  --g:#00ff88;
+  --gd:rgba(0,255,136,.08);
+  --gb:rgba(0,255,136,.2);
+  --r:#ff4d6d;
+  --y:#ffb830;
+  --p:#7b61ff;
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+body{background:var(--bg);color:var(--t);font-family:'DM Sans',sans-serif;font-weight:300;-webkit-font-smoothing:antialiased;}
+.screen{display:none;flex-direction:column;min-height:100dvh;}
+.screen.active{display:flex;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;font-family:'Syne Mono',monospace;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;padding:13px 20px;border-radius:8px;cursor:pointer;border:none;touch-action:manipulation;user-select:none;transition:opacity .15s;}
+.btn:active{opacity:.8;}
+.bp{background:var(--g);color:#08080f;font-weight:700;}
+.bg{background:transparent;color:var(--m);border:1px solid var(--b);}
+.bd{background:rgba(255,77,109,.1);color:var(--r);border:1px solid rgba(255,77,109,.2);}
+.bf{width:100%;}
+.bs{padding:9px 14px;font-size:.64rem;}
+
+/* ── FORMS ── */
+.fg{margin-bottom:16px;}
+.fl{display:block;font-family:'Syne Mono',monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--m);margin-bottom:7px;}
+.fi{width:100%;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:13px 14px;color:var(--t);font-family:'DM Sans',sans-serif;font-size:.95rem;outline:none;transition:border-color .15s;-webkit-appearance:none;}
+.fi:focus{border-color:var(--g);}
+.fi::placeholder{color:var(--m);}
+textarea.fi{resize:none;}
+
+/* ── NAV ── */
+.nav{position:sticky;top:0;z-index:100;height:calc(52px + var(--safe-t));padding-top:var(--safe-t);background:rgba(8,8,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between;padding-left:16px;padding-right:16px;flex-shrink:0;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:.95rem;letter-spacing:-.02em;}
+.logo em{color:var(--g);font-style:normal;}
+.tag{font-family:'Syne Mono',monospace;font-size:.44rem;letter-spacing:.1em;text-transform:uppercase;color:var(--m);border:1px solid var(--b);border-radius:3px;padding:2px 5px;margin-left:6px;}
+.nav-r{display:flex;gap:6px;align-items:center;}
+.ic{width:34px;height:34px;background:var(--s1);border:1px solid var(--b);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;touch-action:manipulation;}
+.ic:active{border-color:var(--g);}
+.av{width:34px;height:34px;border-radius:8px;border:1.5px solid var(--g);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--s2);touch-action:manipulation;}
+
+/* ── BOTTOM NAV ── */
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:100;height:calc(60px + var(--safe-b));padding-bottom:var(--safe-b);background:rgba(8,8,15,.98);backdrop-filter:blur(20px);border-top:1px solid var(--b);display:flex;align-items:center;justify-content:space-around;padding-top:4px;}
+.bi{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 16px;border:none;background:transparent;color:var(--m);font-family:'Syne Mono',monospace;font-size:.44rem;letter-spacing:.06em;text-transform:uppercase;touch-action:manipulation;transition:color .15s;}
+.bi.on{color:var(--g);}
+.bi-icon{font-size:20px;line-height:1;}
+.bi-dot{width:4px;height:4px;border-radius:50%;background:var(--g);display:none;margin-top:1px;}
+.bi.on .bi-dot{display:block;}
+
+/* ── P2P BAR ── */
+.pbar{display:flex;align-items:center;gap:8px;padding:5px 16px;background:var(--s1);border-bottom:1px solid var(--b);flex-shrink:0;}
+.pd{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.pd.on{background:var(--g);box-shadow:0 0 6px var(--g);}
+.pd.try{background:var(--y);animation:blink 1.2s infinite;}
+.pd.off{background:var(--m);}
+.pt{font-family:'Syne Mono',monospace;font-size:.56rem;color:var(--m);flex:1;}
+.pp{font-family:'Syne Mono',monospace;font-size:.56rem;color:var(--g);}
+
+/* ── ONBOARD STEPS ── */
+.ob{width:100%;max-width:400px;margin:0 auto;padding:70px 20px 40px;}
+.sbar{display:flex;gap:4px;margin-bottom:28px;}
+.ss{height:2px;border-radius:1px;flex:1;transition:background .3s;}
+.ss.d{background:rgba(0,255,136,.3);}
+.ss.a{background:var(--g);}
+.ss.p{background:var(--b);}
+.sn{font-family:'Syne Mono',monospace;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--g);margin-bottom:6px;}
+.st{font-family:'Syne',sans-serif;font-weight:800;font-size:1.9rem;letter-spacing:-.03em;margin-bottom:6px;line-height:1.1;}
+.su{font-size:.83rem;color:var(--m);margin-bottom:22px;line-height:1.65;}
+.str{height:3px;border-radius:2px;margin-top:6px;transition:all .3s;width:0;}
+.ag{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;}
+.ao{width:44px;height:44px;border-radius:8px;background:var(--s2);border:2px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;touch-action:manipulation;transition:border-color .15s;}
+.ao.sel{border-color:var(--g);}
+.otp-in{width:100%;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:14px;color:var(--t);font-family:'Syne Mono',monospace;font-size:1.6rem;letter-spacing:.3em;text-align:center;outline:none;transition:border-color .15s;-webkit-appearance:none;}
+.otp-in:focus{border-color:var(--g);}
+.tqr{background:#fff;padding:10px;border-radius:8px;display:inline-block;}
+.tsec{background:var(--bg);border:1px solid var(--gb);border-radius:8px;padding:12px;font-family:'Syne Mono',monospace;font-size:.64rem;color:var(--g);letter-spacing:.08em;text-align:center;cursor:pointer;word-break:break-all;margin-bottom:14px;}
+
+/* ── PC WAIT ── */
+.pcw{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;text-align:center;padding:40px 24px;}
+.pcqr{padding:16px;border-radius:20px;background:#fff;margin-bottom:24px;display:inline-block;box-shadow:0 0 80px rgba(0,255,136,.12);}
+
+/* ── FEED ── */
+.fi-wrap{max-width:560px;margin:0 auto;width:100%;padding:12px 14px 80px;}
+.compose{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:14px;margin-bottom:14px;}
+.crow{display:flex;gap:10px;}
+.cav{width:36px;height:36px;border-radius:8px;background:var(--s2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.cf{flex:1;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 12px;color:var(--t);font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;resize:none;min-height:52px;transition:border-color .15s;}
+.cf:focus{border-color:var(--g);}
+.cf::placeholder{color:var(--m);}
+.cfoot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-left:46px;}
+
+/* ── POST ── */
+.post{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:14px;margin-bottom:10px;animation:fu .3s ease;}
+.ph{display:flex;gap:10px;margin-bottom:8px;}
+.pa{width:36px;height:36px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:17px;background:var(--s2);}
+.pn{font-family:'Syne',sans-serif;font-weight:700;font-size:.85rem;}
+.phd{font-family:'Syne Mono',monospace;font-size:.56rem;color:var(--m);}
+.ptm{font-family:'Syne Mono',monospace;font-size:.52rem;color:var(--m);margin-left:auto;flex-shrink:0;}
+.pb{font-size:.88rem;line-height:1.7;color:var(--t);margin-bottom:10px;word-break:break-word;}
+.ploc{font-family:'Syne Mono',monospace;font-size:.54rem;color:var(--m);margin-bottom:8px;}
+.pac{display:flex;gap:2px;}
+.pab{display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:6px;border:none;background:transparent;color:var(--m);font-size:.72rem;cursor:pointer;touch-action:manipulation;transition:background .15s;}
+.pab:active{background:var(--s2);}
+.pab.lk{color:var(--r);}
+.enc{font-family:'Syne Mono',monospace;font-size:.46rem;letter-spacing:.06em;text-transform:uppercase;padding:2px 5px;border-radius:3px;background:var(--gd);border:1px solid var(--gb);color:var(--g);margin-left:4px;}
+
+/* ── PROFILE ── */
+.pbanner{height:100px;flex-shrink:0;position:relative;overflow:hidden;}
+.pbg{position:absolute;inset:0;}
+.pbody{max-width:560px;margin:0 auto;width:100%;padding:0 16px 90px;}
+.paw{position:relative;display:inline-block;margin-top:-38px;margin-bottom:10px;}
+.pavi{width:76px;height:76px;border-radius:14px;border:4px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:34px;background:var(--s2);}
+.ponline{position:absolute;bottom:2px;right:2px;width:12px;height:12px;background:var(--g);border-radius:50%;border:2px solid var(--bg);}
+.pname{font-family:'Syne',sans-serif;font-weight:800;font-size:1.6rem;letter-spacing:-.03em;margin-bottom:2px;}
+.phdl{font-family:'Syne Mono',monospace;font-size:.62rem;color:var(--m);margin-bottom:8px;}
+.pbio{font-size:.85rem;color:#8888a8;line-height:1.65;margin-bottom:14px;max-width:340px;}
+.pstats{display:flex;gap:22px;margin-bottom:14px;}
+.snum{font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;color:var(--g);}
+.slbl{font-family:'Syne Mono',monospace;font-size:.5rem;text-transform:uppercase;letter-spacing:.08em;color:var(--m);}
+.pacts{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px;}
+.tabs{display:flex;border-bottom:1px solid var(--b);margin-bottom:14px;}
+.tab{padding:9px 14px;font-family:'Syne Mono',monospace;font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:var(--m);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;touch-action:manipulation;}
+.tab.on{color:var(--g);border-bottom-color:var(--g);}
+.connrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--b);}
+.connrow:last-child{border:none;}
+.connav{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:var(--s2);}
+.connn{font-family:'Syne',sans-serif;font-weight:700;font-size:.85rem;}
+.connm{font-family:'Syne Mono',monospace;font-size:.54rem;color:var(--m);}
+
+/* ── MODALS ── */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(16px);z-index:500;display:none;align-items:flex-end;justify-content:center;}
+.ov.open{display:flex;}
+.modal{background:var(--s1);border:1px solid var(--b);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + var(--safe-b));width:100%;max-width:480px;max-height:90dvh;overflow-y:auto;position:relative;}
+.mhdl{width:36px;height:4px;background:var(--b);border-radius:2px;margin:0 auto 18px;}
+.mx{position:absolute;top:16px;right:16px;width:28px;height:28px;background:var(--s2);border:none;border-radius:6px;color:var(--m);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
+.mt{font-family:'Syne',sans-serif;font-weight:800;font-size:1.5rem;letter-spacing:-.02em;margin-bottom:5px;}
+.ms{font-size:.82rem;color:var(--m);margin-bottom:18px;line-height:1.6;}
+
+/* Scanner */
+.scanbox{width:100%;max-width:280px;border-radius:10px;overflow:hidden;border:2px solid var(--g);margin:0 auto 14px;background:#000;}
+#qr-reader{width:100%!important;}
+#qr-reader video{width:100%!important;object-fit:cover!important;}
+#qr-reader__scan_region{background:transparent!important;}
+#qr-reader__dashboard{display:none!important;}
+#qr-reader__scan_region img{display:none!important;}
+
+/* QR display */
+.qrbox{background:#fff;padding:10px;border-radius:8px;display:inline-block;}
+.kd{font-family:'Syne Mono',monospace;font-size:.56rem;color:var(--m);word-break:break-all;line-height:1.7;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:12px;margin-bottom:10px;}
+.khi{color:var(--g);}
+
+/* Info boxes */
+.warn{background:rgba(255,184,48,.06);border:1px solid rgba(255,184,48,.2);border-radius:8px;padding:12px;margin-bottom:14px;font-size:.78rem;color:var(--y);line-height:1.6;}
+.info{background:var(--gd);border:1px solid var(--gb);border-radius:8px;padding:12px;margin-bottom:14px;font-size:.78rem;color:var(--g);line-height:1.6;}
+.div{height:1px;background:var(--b);margin:16px 0;}
+.shield{background:var(--s1);border:1px solid var(--gb);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+
+/* Toast */
+#toast{position:fixed;bottom:calc(70px + var(--safe-b));left:50%;transform:translateX(-50%) translateY(8px);background:var(--s1);border:1px solid var(--gb);border-radius:8px;padding:9px 16px;font-family:'Syne Mono',monospace;font-size:.62rem;letter-spacing:.04em;z-index:9999;transition:all .25s;opacity:0;pointer-events:none;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis;}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+
+/* Empty */
+.empty{text-align:center;padding:40px 16px;}
+.ei{font-size:2.5rem;margin-bottom:12px;}
+.et{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;margin-bottom:6px;}
+.es{font-size:.82rem;color:var(--m);line-height:1.6;margin-bottom:18px;}
+
+/* PC/mobile */
+@media(min-width:768px){.mob{display:none!important;}.ov{align-items:center;}.modal{border-radius:14px;}}
+@media(max-width:767px){.dsk{display:none!important;}}
+
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,255,136,.4)}50%{box-shadow:0 0 0 10px rgba(0,255,136,0)}}
+@keyframes sd{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- PC WAIT -->
+<div id="s-pc" class="screen dsk">
+  <div class="pcw">
+    <p style="font-family:'Syne Mono',monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--g);margin-bottom:16px;">PrivacyChase Social · v0.1</p>
+    <h1 style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2.5rem,6vw,4.5rem);letter-spacing:-.03em;margin-bottom:10px;line-height:1;">Open on your<br><span style="color:var(--g);">phone.</span></h1>
+    <p style="color:var(--m);font-size:.9rem;max-width:360px;margin:0 auto 28px;line-height:1.7;">Create your account on mobile. Then go to Settings → Mirror to PC to connect.</p>
+    <div class="pcqr"><div id="pc-qr" style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;"><span style="font-family:'Syne Mono',monospace;font-size:.7rem;color:#999;">generating...</span></div></div>
+    <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:12px;">
+      <div id="pc-dot" style="width:8px;height:8px;border-radius:50%;background:var(--y);animation:pulse 2s ease infinite;"></div>
+      <span style="font-family:'Syne Mono',monospace;font-size:.66rem;color:var(--m);" id="pc-status">Waiting for phone...</span>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARD -->
+<div id="s-ob" class="screen mob">
+  <div style="display:flex;justify-content:center;min-height:100dvh;padding-bottom:40px;">
+    <div class="ob">
+
+      <!-- Step 1: Passphrase -->
+      <div id="ob1">
+        <div class="sbar"><div class="ss a"></div><div class="ss p"></div><div class="ss p"></div><div class="ss p"></div></div>
+        <p class="sn">Step 1 of 4</p>
+        <h2 class="st">Your passphrase.</h2>
+        <p class="su">This IS your account. Same passphrase = same identity anywhere. No recovery if lost.</p>
+        <div class="fg"><label class="fl">Passphrase</label><input class="fi" id="p1" type="password" placeholder="make it memorable..." autocomplete="new-password" oninput="chkStr()"/><div class="str" id="str"></div><div style="font-family:'Syne Mono',monospace;font-size:.54rem;color:var(--m);margin-top:4px;" id="strl"></div></div>
+        <div class="fg"><label class="fl">Confirm</label><input class="fi" id="p2" type="password" placeholder="again..." autocomplete="new-password"/></div>
+        <div class="warn">⚠️ No reset. No recovery. Lose this = lose your account.</div>
+        <button class="btn bp bf" onclick="ob1()">Continue →</button>
+      </div>
+
+      <!-- Step 2: Profile -->
+      <div id="ob2" style="display:none;">
+        <div class="sbar"><div class="ss d"></div><div class="ss a"></div><div class="ss p"></div><div class="ss p"></div></div>
+        <p class="sn">Step 2 of 4</p>
+        <h2 class="st">Your profile.</h2>
+        <p class="su">How you appear to people you connect with in person.</p>
+        <div class="fg"><label class="fl">Display Name</label><input class="fi" id="pn" placeholder="Your name" maxlength="32"/></div>
+        <div class="fg"><label class="fl">Handle</label><input class="fi" id="ph" placeholder="@yourhandle" maxlength="24"/></div>
+        <div class="fg"><label class="fl">Bio</label><textarea class="fi" id="pb" placeholder="Tell people who you are..." maxlength="160" rows="3"></textarea></div>
+        <div class="fg"><label class="fl">Avatar</label><div class="ag" id="ag"></div></div>
+        <button class="btn bp bf" onclick="ob2()">Continue →</button>
+      </div>
+
+      <!-- Step 3: TOTP -->
+      <div id="ob3" style="display:none;">
+        <div class="sbar"><div class="ss d"></div><div class="ss d"></div><div class="ss a"></div><div class="ss p"></div></div>
+        <p class="sn">Step 3 of 4</p>
+        <h2 class="st">2FA lock.</h2>
+        <p class="su">Scan into Google Authenticator, Authy, or Apple Passwords for extra security.</p>
+        <div style="text-align:center;margin-bottom:14px;"><div class="tqr" id="tqr"></div></div>
+        <div class="tsec" id="tsec" onclick="cpyTotp()">Tap to reveal secret</div>
+        <div class="info">💡 No auth app? Skip — enable later in settings.</div>
+        <div style="display:flex;gap:8px;"><button class="btn bg bf" onclick="ob3skip()">Skip</button><button class="btn bp bf" onclick="ob3()">Scanned →</button></div>
+      </div>
+
+      <!-- Step 4: Verify TOTP -->
+      <div id="ob4" style="display:none;">
+        <div class="sbar"><div class="ss d"></div><div class="ss d"></div><div class="ss d"></div><div class="ss a"></div></div>
+        <p class="sn">Step 4 of 4</p>
+        <h2 class="st">Verify code.</h2>
+        <p class="su">Enter the 6-digit code from your auth app to confirm setup.</p>
+        <div class="fg"><input class="otp-in" id="otp1" type="tel" maxlength="6" placeholder="000000" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6);if(this.value.length===6)ob4()" onkeydown="if(event.key==='Enter')ob4()"/></div>
+        <div id="ote" style="display:none;font-family:'Syne Mono',monospace;font-size:.6rem;color:var(--r);text-align:center;margin-bottom:10px;">✗ Wrong code</div>
+        <button class="btn bp bf" onclick="ob4()">Finish →</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="s-login" class="screen">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100dvh;padding:20px;">
+    <div style="width:100%;max-width:380px;background:var(--s1);border:1px solid var(--b);border-radius:14px;padding:24px;">
+      <p style="font-family:'Syne Mono',monospace;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--g);margin-bottom:6px;">Welcome back</p>
+      <h2 style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.9rem;letter-spacing:-.03em;margin-bottom:6px;">Sign in.</h2>
+      <p style="font-size:.83rem;color:var(--m);margin-bottom:20px;line-height:1.6;">Your passphrase restores your keys.</p>
+      <div id="lp">
+        <div class="fg"><label class="fl">Passphrase</label><input class="fi" id="lpass" type="password" placeholder="your passphrase..." autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+        <button class="btn bp bf" onclick="doLogin()" style="touch-action:manipulation;">Sign In →</button>
+      </div>
+      <div id="lt" style="display:none;margin-top:16px;">
+        <div class="div"></div>
+        <p style="font-size:.82rem;color:var(--m);margin:14px 0 10px;">6-digit auth code:</p>
+        <input class="otp-in" id="lotp" type="tel" maxlength="6" placeholder="000000" style="margin-bottom:10px;" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6);if(this.value.length===6)doLoginOtp()" onkeydown="if(event.key==='Enter')doLoginOtp()"/>
+        <div id="lote" style="display:none;font-family:'Syne Mono',monospace;font-size:.6rem;color:var(--r);text-align:center;margin-bottom:10px;">✗ Wrong code</div>
+        <button class="btn bp bf" onclick="doLoginOtp()" style="touch-action:manipulation;">Sign In →</button>
+        <button class="btn bg bf" style="margin-top:8px;touch-action:manipulation;" onclick="resetLogin()">← Different passphrase</button>
+      </div>
+      <div style="margin-top:16px;text-align:center;">
+        <button class="btn bg bs mob" onclick="show('s-ob')" style="touch-action:manipulation;">New here? Create account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEED -->
+<div id="s-feed" class="screen">
+  <div class="nav">
+    <div><span class="logo">Privacy<em>.</em>Chase</span><span class="tag">Social</span></div>
+    <div class="nav-r">
+      <div class="ic" onclick="openM('scan')">📷</div>
+      <div class="ic" onclick="openM('settings')">⚙️</div>
+      <div class="av" id="favi" onclick="goTab('profile')">🦊</div>
+    </div>
+  </div>
+  <div class="pbar"><div class="pd off" id="pdot"></div><span class="pt" id="plbl">Connecting...</span><span class="pp" id="ppeers"></span></div>
+  <div class="fi-wrap">
+    <div class="compose">
+      <div class="crow">
+        <div class="cav" id="cavi">🦊</div>
+        <textarea class="cf" id="ctxt" placeholder="What's happening? Encrypted before sending." rows="2"></textarea>
+      </div>
+      <div class="cfoot">
+        <button class="btn bg bs" onclick="togLoc()" id="locbtn" style="touch-action:manipulation;">📍 Location</button>
+        <button class="btn bp bs" onclick="doPost()" style="touch-action:manipulation;">Post</button>
+      </div>
+    </div>
+    <div id="feed"></div>
+  </div>
+  <div class="bnav">
+    <button class="bi on" id="bn-feed" onclick="goTab('feed')"><span class="bi-icon">🏠</span>Feed<div class="bi-dot"></div></button>
+    <button class="bi" id="bn-scan" onclick="openM('scan')"><span class="bi-icon">📷</span>Connect</button>
+    <button class="bi" id="bn-prof" onclick="goTab('profile')"><span class="bi-icon">👤</span>Profile<div class="bi-dot"></div></button>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div id="s-prof" class="screen">
+  <div class="nav">
+    <div><span class="logo">Privacy<em>.</em>Chase</span><span class="tag">Profile</span></div>
+    <div class="nav-r"><div class="ic" onclick="openM('settings')">⚙️</div></div>
+  </div>
+  <div class="pbanner"><div class="pbg" style="background:linear-gradient(135deg,#080820,#080818,#180808);"></div></div>
+  <div class="pbody">
+    <div class="paw"><div class="pavi" id="pavi">🦊</div><div class="ponline"></div></div>
+    <div class="pname" id="pname">—</div>
+    <div class="phdl" id="phdl">—</div>
+    <div class="pbio" id="pbio">—</div>
+    <div class="pstats"><div><div class="snum" id="spost">0</div><div class="slbl">Posts</div></div><div><div class="snum" id="sconn">0</div><div class="slbl">Connections</div></div></div>
+    <div class="pacts">
+      <button class="btn bp bs" onclick="openM('mykey')" style="touch-action:manipulation;">My QR 🔑</button>
+      <button class="btn bg bs" onclick="openM('scan')" style="touch-action:manipulation;">Scan 📷</button>
+      <button class="btn bg bs" onclick="openM('settings')" style="touch-action:manipulation;">Settings</button>
+    </div>
+    <div class="tabs">
+      <div class="tab on" onclick="ptab(this,'pt-p')">Posts</div>
+      <div class="tab" onclick="ptab(this,'pt-c')">Connections</div>
+      <div class="tab" onclick="ptab(this,'pt-k')">My Key</div>
+    </div>
+    <div id="pt-p"></div>
+    <div id="pt-c" style="display:none;"></div>
+    <div id="pt-k" style="display:none;text-align:center;padding-top:14px;">
+      <div style="display:flex;justify-content:center;margin-bottom:10px;"><div class="qrbox" id="pqr"></div></div>
+      <div class="kd" id="pkv">—</div>
+      <button class="btn bg bf bs" onclick="cpyKey()">Copy Public Key</button>
+    </div>
+  </div>
+  <div class="bnav">
+    <button class="bi" id="bn2-feed" onclick="goTab('feed')"><span class="bi-icon">🏠</span>Feed<div class="bi-dot"></div></button>
+    <button class="bi" id="bn2-scan" onclick="openM('scan')"><span class="bi-icon">📷</span>Connect</button>
+    <button class="bi on" id="bn2-prof" onclick="goTab('profile')"><span class="bi-icon">👤</span>Profile<div class="bi-dot"></div></button>
+  </div>
+</div>
+
+<!-- MODAL: SCAN -->
+<div class="ov" id="m-scan">
+  <div class="modal">
+    <div class="mhdl"></div>
+    <button class="mx" onclick="closeM('scan');stopScan()">✕</button>
+    <h2 class="mt">Connect in Person</h2>
+    <p class="ms">Point at someone's PrivacyChase QR. Must be physically present.</p>
+    <div class="scanbox"><div id="qr-reader"></div></div>
+    <div id="scan-res" style="display:none;">
+      <div class="info" id="scan-res-txt"></div>
+      <div class="fg"><label class="fl">Their name</label><input class="fi" id="sc-name" placeholder="How you know them"/></div>
+      <div class="fg"><label class="fl">Where you met</label><input class="fi" id="sc-loc" placeholder="The coffee shop, conference..."/></div>
+      <button class="btn bp bf" onclick="confirmConn()" style="touch-action:manipulation;">Connect 🤝</button>
+    </div>
+    <div class="div"></div>
+    <p style="font-family:'Syne Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--m);margin-bottom:8px;">Or paste their public key</p>
+    <div style="display:flex;gap:8px;"><input class="fi" id="pkey" placeholder="pc1_pub_..." style="flex:1;font-size:.75rem;"/><button class="btn bg" onclick="pasteConn()" style="touch-action:manipulation;">Add</button></div>
+  </div>
+</div>
+
+<!-- MODAL: MY KEY -->
+<div class="ov" id="m-mykey">
+  <div class="modal" style="text-align:center;">
+    <div class="mhdl"></div>
+    <button class="mx" onclick="closeM('mykey')">✕</button>
+    <h2 class="mt">Your Key</h2>
+    <p class="ms">Have someone scan this to connect with you in person.</p>
+    <div style="display:flex;justify-content:center;margin-bottom:12px;"><div class="qrbox" id="mkqr"></div></div>
+    <div class="kd" id="mkv" style="text-align:left;margin-bottom:14px;"></div>
+    <button class="btn bp bf" onclick="cpyKey()" style="touch-action:manipulation;">Copy Public Key</button>
+    <button class="btn bg bf" style="margin-top:8px;touch-action:manipulation;" onclick="shareKey()">Share via...</button>
+  </div>
+</div>
+
+<!-- MODAL: SETTINGS -->
+<div class="ov" id="m-settings">
+  <div class="modal">
+    <div class="mhdl"></div>
+    <button class="mx" onclick="closeM('settings')">✕</button>
+    <h2 class="mt">Settings</h2>
+    <div class="shield"><span style="font-size:1.1rem;">🛡️</span><div><div style="font-size:.82rem;font-weight:500;">Encryption</div><div style="font-family:'Syne Mono',monospace;font-size:.54rem;color:var(--g);">AES-256-GCM · PBKDF2 200k · WebRTC E2E</div></div></div>
+    <div class="shield"><span style="font-size:1.1rem;">🌐</span><div><div style="font-size:.82rem;font-weight:500;">P2P</div><div style="font-family:'Syne Mono',monospace;font-size:.54rem;color:var(--g);" id="sp2p">—</div></div></div>
+    <div class="shield"><span style="font-size:1.1rem;">💾</span><div><div style="font-size:.82rem;font-weight:500;">Storage</div><div style="font-family:'Syne Mono',monospace;font-size:.54rem;color:var(--g);" id="sstore">IndexedDB · encrypted</div></div></div>
+    <div class="div"></div>
+    <button class="btn bp bf mob" onclick="openM('mirror');closeM('settings')" style="touch-action:manipulation;margin-bottom:8px;">🖥️ Mirror to PC</button>
+    <button class="btn bg bf" onclick="openM('backup');closeM('settings')" style="touch-action:manipulation;margin-bottom:8px;">🔄 Backup & Sync</button>
+    <button class="btn bg bf" onclick="openM('mykey');closeM('settings')" style="touch-action:manipulation;margin-bottom:8px;">🔑 My Public Key</button>
+    <div class="div"></div>
+    <button class="btn bd bf" onclick="signOut()" style="touch-action:manipulation;">Sign Out</button>
+  </div>
+</div>
+
+<!-- MODAL: MIRROR TO PC -->
+<div class="ov" id="m-mirror">
+  <div class="modal" style="text-align:center;">
+    <div class="mhdl"></div>
+    <button class="mx" onclick="closeM('mirror')">✕</button>
+    <h2 class="mt">Mirror to PC</h2>
+    <p class="ms">Open PrivacyChase on your PC. It shows a QR — scan it here to connect.</p>
+    <!-- Phone scans PC's QR — camera opens -->
+    <div class="scanbox" id="mirror-scan-box"><div id="mirror-qr-reader"></div></div>
+    <div id="mirror-result" style="display:none;">
+      <div class="info" id="mirror-res-txt"></div>
+      <div class="fg" style="margin-top:10px;"><label class="fl">Confirm with passphrase</label><input class="fi" id="mirror-pass" type="password" placeholder="your passphrase..." onkeydown="if(event.key==='Enter')confirmMirror()"/></div>
+      <button class="btn bp bf" onclick="confirmMirror()" style="touch-action:manipulation;">Connect to PC →</button>
+    </div>
+    <div class="div"></div>
+    <p style="font-family:'Syne Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--m);margin-bottom:8px;">Short code from PC screen</p>
+    <div style="display:flex;gap:8px;">
+      <input class="fi" id="mirror-code" placeholder="XXXX-XXXX" maxlength="9" style="flex:1;font-family:'Syne Mono',monospace;font-size:1.1rem;letter-spacing:.2em;text-align:center;text-transform:uppercase;" oninput="fmtCode(this)"/>
+      <button class="btn bg" onclick="codeConnect()" style="touch-action:manipulation;">Connect</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: BACKUP -->
+<div class="ov" id="m-backup">
+  <div class="modal">
+    <div class="mhdl"></div>
+    <button class="mx" onclick="closeM('backup')">✕</button>
+    <h2 class="mt">Backup & Sync</h2>
+    <p class="ms">Generate an encrypted code to restore your account on another device.</p>
+    <div class="fg"><label class="fl">Backup Code</label><textarea class="fi" id="bkout" rows="4" readonly style="font-family:'Syne Mono',monospace;font-size:.56rem;word-break:break-all;" placeholder="Tap Generate..."></textarea></div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button class="btn bp bf" onclick="genBackup()" style="touch-action:manipulation;">Generate</button>
+      <button class="btn bg bf" onclick="cpyBackup()" style="touch-action:manipulation;">Copy</button>
+    </div>
+    <div class="div"></div>
+    <p style="font-family:'Syne Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--m);margin-bottom:8px;">Import from another device</p>
+    <div class="fg"><textarea class="fi" id="bkin" rows="4" style="font-family:'Syne Mono',monospace;font-size:.56rem;word-break:break-all;" placeholder="Paste backup code..."></textarea></div>
+    <div class="fg"><label class="fl">Passphrase</label><input class="fi" id="bkpass" type="password" placeholder="your passphrase..." onkeydown="if(event.key==='Enter')impBackup()"/></div>
+    <button class="btn bp bf" onclick="impBackup()" style="touch-action:manipulation;">Import →</button>
+    <div id="bkst" style="display:none;margin-top:10px;font-family:'Syne Mono',monospace;font-size:.63rem;text-align:center;"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict'
+
+// ═══════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════
+const APP = 'PrivacyChase Social'
+const VER = 'v0.1'
+const DB_NAME = 'pcs_v1'
+const SALT = 'privacychase_social_v1_2026'
+const ITER = 200000
+const AVTS = ['🦊','🐺','🦋','🌊','⚡','🔥','💫','🌙','🎮','🎵','🏔️','🌸','🦁','🐉','🌈','🎯','🦅','🌿','⭐','🎪']
+const ICE = [
+  {urls:'stun:stun.cloudflare.com:3478'},
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+  {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turns:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+]
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let U = null   // user profile
+let K = null   // keys {privateKey, publicKey}
+let TOTP = null
+let TOTP_SEC = null
+let TOTP_ON = false
+let POSTS = []
+let CONNS = []
+let PEER = null
+let PEER_CONNS = {}
+let PEERS_N = 0
+let BC = null  // BroadcastChannel
+
+// Temp during onboard
+let _pass = '', _prof = {}, _totp = null, _tsec = ''
+// Temp during scan
+let _scanKey = null
+let _mirrorData = null
+// Location
+let _locOn = false, _locVal = null
+
+// ═══════════════════════════════════════
+// INDEXEDDB
+// ═══════════════════════════════════════
+let _db = null
+async function dbOpen() {
+  if (_db) return _db
+  return new Promise((res,rej) => {
+    const r = indexedDB.open(DB_NAME, 1)
+    r.onupgradeneeded = e => e.target.result.createObjectStore('kv',{keyPath:'k'})
+    r.onsuccess = e => { _db = e.target.result; res(_db) }
+    r.onerror = () => rej(r.error)
+  })
+}
+async function dbSet(k,v) {
+  const db = await dbOpen()
+  return new Promise((res,rej) => {
+    const tx = db.transaction('kv','readwrite')
+    tx.objectStore('kv').put({k,v})
+    tx.oncomplete=res; tx.onerror=()=>rej(tx.error)
+  })
+}
+async function dbGet(k) {
+  const db = await dbOpen()
+  return new Promise((res,rej) => {
+    const tx = db.transaction('kv','readonly')
+    const r = tx.objectStore('kv').get(k)
+    r.onsuccess = () => res(r.result?.v ?? null)
+    r.onerror = () => rej(r.error)
+  })
+}
+async function save() {
+  await dbSet('main',{u:U,k:K,ts:TOTP_SEC,ton:TOTP_ON,p:POSTS,c:CONNS})
+  try { sessionStorage.setItem('pcs_k', JSON.stringify(K)) } catch(e) {}
+}
+async function load() {
+  try {
+    const d = await dbGet('main')
+    if (!d?.u || !d?.k) return false
+    U=d.u; K=d.k; TOTP_SEC=d.ts; TOTP_ON=d.ton||false
+    POSTS=d.p||[]; CONNS=d.c||[]
+    if (TOTP_ON && TOTP_SEC) {
+      TOTP = new OTPAuth.TOTP({issuer:APP,label:U.handle||'user',algorithm:'SHA1',digits:6,period:30,secret:OTPAuth.Secret.fromBase32(TOTP_SEC)})
+    }
+    return true
+  } catch(e) { return false }
+}
+
+// ═══════════════════════════════════════
+// CRYPTO
+// ═══════════════════════════════════════
+const hex = b => Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')
+const unhex = s => { const b=new Uint8Array(s.length/2); for(let i=0;i<s.length;i+=2)b[i/2]=parseInt(s.slice(i,i+2),16); return b }
+const b64e = b => btoa(String.fromCharCode(...new Uint8Array(b)))
+const b64d = s => Uint8Array.from(atob(s),c=>c.charCodeAt(0))
+
+async function deriveKeys(pass) {
+  const enc = new TextEncoder()
+  const km = await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveBits'])
+  const bits = await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode(SALT),iterations:ITER,hash:'SHA-256'},km,512)
+  const arr = new Uint8Array(bits)
+  const priv = arr.slice(0,32)
+  const pub = new Uint8Array(await crypto.subtle.digest('SHA-256',priv))
+  const keys = {privateKey:hex(priv), publicKey:'pc1_pub_'+hex(pub)}
+  try { sessionStorage.setItem('pcs_k',JSON.stringify(keys)) } catch(e) {}
+  return keys
+}
+
+async function enc(text, privHex) {
+  const enc = new TextEncoder()
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const ck = await crypto.subtle.importKey('raw',unhex(privHex.slice(0,64)),'AES-GCM',false,['encrypt'])
+  const ct = await crypto.subtle.encrypt({name:'AES-GCM',iv},ck,enc.encode(text))
+  const out = new Uint8Array(12+ct.byteLength)
+  out.set(iv); out.set(new Uint8Array(ct),12)
+  return 'PC1:'+b64e(out.buffer)
+}
+
+async function dec(code, privHex) {
+  try {
+    const raw = b64d(code.slice(4))
+    const iv = raw.slice(0,12), ct = raw.slice(12)
+    const ck = await crypto.subtle.importKey('raw',unhex(privHex.slice(0,64)),'AES-GCM',false,['decrypt'])
+    const pt = await crypto.subtle.decrypt({name:'AES-GCM',iv},ck,ct)
+    return new TextDecoder().decode(pt)
+  } catch(e) { return null }
+}
+
+// ═══════════════════════════════════════
+// ONBOARD
+// ═══════════════════════════════════════
+function initAvatars() {
+  const el = document.getElementById('ag')
+  if (!el) return
+  el.innerHTML = AVTS.map((a,i)=>`<div class="ao${i===0?' sel':''}" onclick="selAv(this,'${a}')">${a}</div>`).join('')
+  _prof.avatar = AVTS[0]
+}
+function selAv(el,a) { document.querySelectorAll('.ao').forEach(d=>d.classList.remove('sel')); el.classList.add('sel'); _prof.avatar=a }
+
+function chkStr() {
+  const p=document.getElementById('p1').value
+  const b=document.getElementById('str'),l=document.getElementById('strl')
+  if (!p) { b.style.cssText='width:0'; l.textContent=''; return }
+  if (p.length<8) { b.style.cssText='width:33%;background:var(--r)'; l.textContent='Too short'; return }
+  if (p.length<14) { b.style.cssText='width:66%;background:var(--y)'; l.textContent='Okay'; return }
+  b.style.cssText='width:100%;background:var(--g)'; l.textContent='Strong ✓'
+}
+
+async function ob1() {
+  const p=document.getElementById('p1').value, p2=document.getElementById('p2').value
+  if (p.length<8) { toast('⚠️ At least 8 characters'); return }
+  if (p!==p2) { toast('⚠️ Passphrases don\'t match'); return }
+  _pass=p; toast('🔑 Generating keys...')
+  K = await deriveKeys(p)
+  initAvatars(); obShow(2)
+}
+
+function ob2() {
+  const name=document.getElementById('pn').value.trim()
+  const handle=document.getElementById('ph').value.trim()
+  if (!name) { toast('⚠️ Enter your name'); return }
+  if (!handle) { toast('⚠️ Enter a handle'); return }
+  _prof = { name, handle:handle.startsWith('@')?handle:'@'+handle, bio:document.getElementById('pb').value.trim(), avatar:_prof.avatar||'🦊' }
+  _tsec = new OTPAuth.Secret().base32
+  _totp = new OTPAuth.TOTP({issuer:APP,label:_prof.handle,algorithm:'SHA1',digits:6,period:30,secret:OTPAuth.Secret.fromBase32(_tsec)})
+  const qel = document.getElementById('tqr')
+  qel.innerHTML = ''
+  new QRCode(qel,{text:_totp.toString(),width:180,height:180,colorDark:'#000',colorLight:'#fff'})
+  document.getElementById('tsec').textContent = _tsec
+  obShow(3)
+}
+
+function cpyTotp() { navigator.clipboard.writeText(_tsec).catch(()=>{}); toast('📋 Secret copied') }
+function ob3skip() { _totp=null; _tsec=''; finishOb(false) }
+function ob3() { obShow(4) }
+
+function ob4() {
+  const code = document.getElementById('otp1').value.trim()
+  if (code.length<6) { toast('⚠️ Enter 6 digits'); return }
+  if (_totp?.validate({token:code,window:1})===null) { document.getElementById('ote').style.display='block'; return }
+  document.getElementById('ote').style.display='none'
+  finishOb(true)
+}
+
+async function finishOb(withTotp) {
+  U=_prof; TOTP_ON=withTotp; TOTP_SEC=withTotp?_tsec:null; TOTP=withTotp?_totp:null
+  POSTS=[]; CONNS=[]; addSamplePosts()
+  await save(); startApp(); toast(`🎉 Welcome, ${U.name}!`)
+  broadcast({type:'phone_linked',user:U,keys:K,posts:POSTS,conns:CONNS})
+}
+
+function obShow(n) { for(let i=1;i<=4;i++){const e=document.getElementById('ob'+i);if(e)e.style.display=i===n?'block':'none'} }
+
+// ═══════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════
+function resetLogin() {
+  document.getElementById('lp').style.display='block'
+  document.getElementById('lt').style.display='none'
+  document.getElementById('lpass').value=''
+  document.getElementById('lotp').value=''
+  document.getElementById('lote').style.display='none'
+}
+
+async function doLogin() {
+  const p=document.getElementById('lpass').value.trim()
+  if (!p) { toast('⚠️ Enter your passphrase'); return }
+  toast('🔑 Verifying...')
+  const dk = await deriveKeys(p)
+  if (K?.publicKey && dk.publicKey!==K.publicKey) { toast('✗ Wrong passphrase'); return }
+  K=dk
+  if (TOTP_ON && TOTP_SEC && !TOTP) {
+    try { TOTP=new OTPAuth.TOTP({issuer:APP,label:U?.handle||'user',algorithm:'SHA1',digits:6,period:30,secret:OTPAuth.Secret.fromBase32(TOTP_SEC)}) } catch(e) { TOTP=null }
+  }
+  if (TOTP_ON && TOTP) {
+    document.getElementById('lt').style.display='block'
+    document.getElementById('lotp').value=''; document.getElementById('lotp').focus()
+  } else { loginOk() }
+}
+
+function doLoginOtp() {
+  const code=document.getElementById('lotp').value.trim()
+  if (code.length<6) { toast('⚠️ Enter 6 digits'); return }
+  if (!TOTP) { loginOk(); return }
+  if (TOTP.validate({token:code,window:1})===null) { document.getElementById('lote').style.display='block'; return }
+  loginOk()
+}
+
+function loginOk() {
+  try { sessionStorage.setItem('pcs_k',JSON.stringify(K)) } catch(e) {}
+  startApp(); toast('🔓 Welcome back, '+U?.name)
+}
+
+// ═══════════════════════════════════════
+// SAMPLE DATA
+// ═══════════════════════════════════════
+function addSamplePosts() {
+  POSTS = [
+    {id:'s1',name:'NightOwl',handle:'@nightowl',avatar:'🦋',body:'just shipped PrivacyChase v0.1. in-person only. no bots. no algorithm. no ads. just real people.',time:'5m ago',likes:47,liked:false,trusted:false,ts:Date.now()-300000},
+    {id:'s2',name:'WaveRider',handle:'@waverider',avatar:'🌊',body:'scanned 3 people at the meetup tonight. this is what social should have been.',time:'28m ago',likes:89,liked:false,trusted:true,ts:Date.now()-1680000},
+  ]
+}
+
+// ═══════════════════════════════════════
+// APP
+// ═══════════════════════════════════════
+function startApp() {
+  renderNav(); renderFeed(); renderProfile()
+  goTab('feed')
+  setTimeout(initP2P, 800)
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+  window.scrollTo(0,0)
+}
+
+function goTab(tab) {
+  if (tab==='feed') {
+    show('s-feed')
+    document.querySelectorAll('[id^=bn]').forEach(b=>b.classList.remove('on'))
+    document.getElementById('bn-feed')?.classList.add('on')
+    document.getElementById('bn2-feed')?.classList.add('on')
+    renderFeed()
+  } else {
+    show('s-prof')
+    document.querySelectorAll('[id^=bn]').forEach(b=>b.classList.remove('on'))
+    document.getElementById('bn-prof')?.classList.add('on')
+    document.getElementById('bn2-prof')?.classList.add('on')
+    renderProfile()
+  }
+}
+
+// ═══════════════════════════════════════
+// FEED
+// ═══════════════════════════════════════
+function renderNav() {
+  const f=document.getElementById('favi'), c=document.getElementById('cavi')
+  if (f&&U) f.textContent=U.avatar||'🦊'
+  if (c&&U) c.textContent=U.avatar||'🦊'
+}
+
+function renderFeed() {
+  const el=document.getElementById('feed')
+  if (!el) return
+  if (!POSTS.length) { el.innerHTML=`<div class="empty"><div class="ei">🌐</div><div class="et">No posts yet</div><div class="es">Connect with people in person to see their posts.</div></div>`; return }
+  el.innerHTML=POSTS.map(postEl).join('')
+}
+
+function postEl(p) {
+  return `<div class="post" id="post-${p.id}">
+    <div class="ph">
+      <div class="pa">${p.avatar||'👤'}</div>
+      <div style="flex:1;">
+        <div class="pn">${p.name}<span class="enc">E2E</span>${p.trusted?'<span class="enc" style="background:rgba(123,97,255,.1);border-color:rgba(123,97,255,.3);color:var(--p);">trusted</span>':''}</div>
+        <div class="phd">${p.handle}</div>
+      </div>
+      <div class="ptm">${p.time}</div>
+    </div>
+    ${p.location?`<div class="ploc">📍 ${p.location}</div>`:''}
+    <div class="pb">${p.body}</div>
+    <div class="pac">
+      <button class="pab ${p.liked?'lk':''}" onclick="likePost('${p.id}')">${p.liked?'❤️':'🤍'} ${p.likes||0}</button>
+      <button class="pab" onclick="toast('💬 Comments — v0.2')">💬 ${p.comments||0}</button>
+    </div>
+  </div>`
+}
+
+function likePost(id) {
+  const p=POSTS.find(x=>x.id===id); if(!p)return
+  p.liked=!p.liked; p.likes=(p.likes||0)+(p.liked?1:-1)
+  renderFeed(); save()
+}
+
+function togLoc() {
+  if (_locOn) { _locOn=false;_locVal=null;document.getElementById('locbtn').textContent='📍 Location';toast('📍 Removed');return }
+  if (!navigator.geolocation) { toast('📍 Not supported');return }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    _locOn=true;_locVal=`${pos.coords.latitude.toFixed(3)}, ${pos.coords.longitude.toFixed(3)}`
+    document.getElementById('locbtn').textContent='📍 '+_locVal; toast('📍 Added')
+  },()=>toast('📍 Denied'))
+}
+
+async function doPost() {
+  const txt=document.getElementById('ctxt').value.trim()
+  if (!txt) { toast('⚠️ Write something first');return }
+  const p={id:'p_'+Date.now(),name:U.name,handle:U.handle,avatar:U.avatar||'🦊',body:txt,time:'just now',likes:0,liked:false,comments:0,location:_locVal||null,trusted:true,ts:Date.now()}
+  POSTS.unshift(p); document.getElementById('ctxt').value=''
+  renderFeed(); renderProfile(); await save()
+  broadcast({type:'post',post:p}); toast('🔐 Posted!')
+}
+
+// ═══════════════════════════════════════
+// PROFILE
+// ═══════════════════════════════════════
+function renderProfile() {
+  if (!U) return
+  document.getElementById('pavi').textContent=U.avatar||'🦊'
+  document.getElementById('pname').textContent=U.name||'—'
+  document.getElementById('phdl').textContent=U.handle||'—'
+  document.getElementById('pbio').textContent=U.bio||'No bio yet.'
+  document.getElementById('spost').textContent=POSTS.filter(p=>p.handle===U?.handle).length
+  document.getElementById('sconn').textContent=CONNS.length
+  renderMyPosts(); renderConns()
+}
+
+function renderMyPosts() {
+  const el=document.getElementById('pt-p'); if(!el)return
+  const mine=POSTS.filter(p=>p.handle===U?.handle)
+  el.innerHTML=mine.length?mine.map(postEl).join(''):`<div class="empty"><div class="ei">✏️</div><div class="et">No posts yet</div><div class="es">Share something!</div></div>`
+}
+
+function renderConns() {
+  const el=document.getElementById('pt-c'); if(!el)return
+  if (!CONNS.length) { el.innerHTML=`<div class="empty"><div class="ei">🤝</div><div class="et">No connections yet</div><div class="es">Scan someone's QR in person.</div></div>`; return }
+  el.innerHTML=CONNS.map(c=>`<div class="connrow"><div class="connav">${c.avatar||'👤'}</div><div style="flex:1;"><div class="connn">${c.name}</div><div class="connm">📍 ${c.location||'Unknown'} · ${ago(c.at)}</div></div><div style="width:7px;height:7px;border-radius:50%;background:${Math.random()>.4?'var(--g)':'var(--m)'}"></div></div>`).join('')
+}
+
+function ptab(el,id) {
+  document.querySelectorAll('#s-prof .tab').forEach(t=>t.classList.remove('on')); el.classList.add('on')
+  ;['pt-p','pt-c','pt-k'].forEach(x=>document.getElementById(x).style.display=x===id?'block':'none')
+  if (id==='pt-k') renderProfileQR()
+}
+
+function renderProfileQR() {
+  if (!K?.publicKey) return
+  const el=document.getElementById('pqr'); if(el&&!el.innerHTML) new QRCode(el,{text:K.publicKey,width:160,height:160,colorDark:'#000',colorLight:'#fff'})
+  const kv=document.getElementById('pkv'); if(kv) kv.innerHTML=`<span class="khi">${K.publicKey.slice(0,8)}</span>${K.publicKey.slice(8,36)}...`
+}
+
+// ═══════════════════════════════════════
+// MY KEY MODAL
+// ═══════════════════════════════════════
+function openMyKey() {
+  if (!K?.publicKey) return
+  const el=document.getElementById('mkqr'); el.innerHTML=''
+  new QRCode(el,{text:K.publicKey,width:200,height:200,colorDark:'#000',colorLight:'#fff'})
+  const kv=document.getElementById('mkv'); const k=K.publicKey
+  kv.innerHTML=`<span class="khi">${k.slice(0,8)}</span>${k.slice(8,44)}...`
+}
+function cpyKey() { navigator.clipboard.writeText(K?.publicKey||'').catch(()=>{}); toast('🔑 Key copied!') }
+function shareKey() { if(navigator.share&&K?.publicKey) navigator.share({title:'My PrivacyChase Key',text:K.publicKey}); else cpyKey() }
+
+// ═══════════════════════════════════════
+// QR SCANNER — exact same approach from working P2P test
+// ═══════════════════════════════════════
+let _scanner = null
+let _mirrorScanner = null
+
+function startScan() {
+  const el = document.getElementById('qr-reader')
+  if (!el) return
+  if (!_scanner) _scanner = new Html5Qrcode('qr-reader')
+  _scanner.start(
+    {facingMode:'environment'},
+    {fps:15, qrbox:(w,h)=>({width:Math.floor(Math.min(w,h)*.8),height:Math.floor(Math.min(w,h)*.8)})},
+    text => { stopScan(); handleScan(text) },
+    () => {}
+  ).catch(err => {
+    console.warn('scan err:', err)
+    el.innerHTML='<div style="padding:30px;text-align:center;color:var(--m);font-size:.8rem;">📷 Allow camera access<br>or paste key below</div>'
+  })
+}
+
+function stopScan() { if(_scanner) _scanner.stop().catch(()=>{}) }
+
+function handleScan(text) {
+  if (text.startsWith('pc1_pub_')) {
+    _scanKey=text
+    document.getElementById('scan-res-txt').textContent='✅ Key scanned — fill in details'
+    document.getElementById('scan-res').style.display='block'
+    document.getElementById('sc-name').focus()
+    return
+  }
+  // Try JSON (PC waiting QR or login QR)
+  try {
+    const d=JSON.parse(text)
+    if (d.t==='pcw') { handlePCWaitQR(d); return }
+    if (d.t==='pcl') { handlePCWaitQR(d); return }
+  } catch(e) {}
+  toast('⚠️ Not a valid PrivacyChase QR')
+}
+
+function pasteConn() {
+  const k=document.getElementById('pkey').value.trim()
+  if (!k.startsWith('pc1_pub_')) { toast('⚠️ Invalid key'); return }
+  _scanKey=k
+  document.getElementById('scan-res-txt').textContent='✅ Key entered — fill in details'
+  document.getElementById('scan-res').style.display='block'
+}
+
+async function confirmConn() {
+  if (!_scanKey) return
+  const name=document.getElementById('sc-name').value.trim()||'Unknown'
+  const loc=document.getElementById('sc-loc').value.trim()||'Unknown location'
+  CONNS.push({id:'c_'+Date.now(),name,location:loc,handle:'@'+name.toLowerCase().replace(/\s/g,''),avatar:AVTS[Math.floor(Math.random()*AVTS.length)],publicKey:_scanKey,at:Date.now()})
+  _scanKey=null
+  document.getElementById('scan-res').style.display='none'
+  document.getElementById('sc-name').value=''; document.getElementById('sc-loc').value=''
+  await save(); renderProfile(); closeM('scan'); toast('🤝 Connected!')
+}
+
+// ═══════════════════════════════════════
+// MIRROR TO PC
+// ═══════════════════════════════════════
+function startMirrorScan() {
+  const el=document.getElementById('mirror-qr-reader')
+  if (!el) return
+  if (!_mirrorScanner) _mirrorScanner=new Html5Qrcode('mirror-qr-reader')
+  _mirrorScanner.start(
+    {facingMode:'environment'},
+    {fps:15, qrbox:(w,h)=>({width:Math.floor(Math.min(w,h)*.8),height:Math.floor(Math.min(w,h)*.8)})},
+    text => {
+      if(_mirrorScanner) _mirrorScanner.stop().catch(()=>{})
+      try {
+        const d=JSON.parse(text)
+        if (d.t==='pcw'||d.t==='pcl') { handlePCWaitQR(d); return }
+      } catch(e) {}
+      toast('⚠️ Not a PC QR')
+    },
+    () => {}
+  ).catch(err => {
+    el.innerHTML='<div style="padding:20px;text-align:center;color:var(--m);font-size:.8rem;">📷 Allow camera access</div>'
+  })
+}
+
+function handlePCWaitQR(data) {
+  _mirrorData=data
+  const rt=document.getElementById('mirror-res-txt')
+  if(rt) rt.textContent='✅ PC found — enter passphrase to confirm'
+  document.getElementById('mirror-result').style.display='block'
+  document.getElementById('mirror-pass').focus()
+}
+
+async function confirmMirror() {
+  const pass=document.getElementById('mirror-pass').value.trim()
+  if (!pass) { toast('⚠️ Enter your passphrase'); return }
+  const dk=await deriveKeys(pass)
+  if (dk.publicKey!==K?.publicKey) { toast('✗ Wrong passphrase'); return }
+  // Connect to PC via PeerJS and send our data
+  if (_mirrorData?.peerId && PEER) {
+    const conn=PEER.connect(_mirrorData.peerId,{reliable:true})
+    conn.on('open',()=>{
+      conn.send(JSON.stringify({type:'phone_linked',user:U,keys:K,posts:POSTS,conns:CONNS}))
+      toast('🖥️ Linked to PC!')
+    })
+    conn.on('error',()=>toast('⚠️ Could not reach PC — make sure both devices are on the internet'))
+  } else {
+    // Fallback: BroadcastChannel (same browser)
+    broadcast({type:'phone_linked',user:U,keys:K,posts:POSTS,conns:CONNS})
+    toast('🖥️ Sent to PC!')
+  }
+  closeM('mirror')
+}
+
+function fmtCode(el) {
+  let v=el.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase().slice(0,8)
+  if(v.length>4) v=v.slice(0,4)+'-'+v.slice(4)
+  el.value=v
+}
+
+function codeConnect() {
+  const code=document.getElementById('mirror-code').value.replace(/[^A-Za-z0-9]/g,'').toUpperCase()
+  if (code.length<8) { toast('⚠️ Enter full 8-char code'); return }
+  // Short code is first 8 chars of pubkey
+  if (!K?.publicKey) { toast('⚠️ Sign in first'); return }
+  const expected=K.publicKey.slice(8,16).toUpperCase()
+  if (code!==expected) { toast('✗ Code does not match this account'); return }
+  broadcast({type:'phone_linked',user:U,keys:K,posts:POSTS,conns:CONNS})
+  toast('🖥️ Linked!')
+}
+
+// ═══════════════════════════════════════
+// P2P — PEERJS (same config that worked in test)
+// ═══════════════════════════════════════
+function initP2P() {
+  if (!K?.publicKey) return
+  setP2P('try','Connecting...')
+  const pid='pc_'+K.publicKey.slice(8,24)
+  try {
+    PEER=new Peer(pid,{host:'0.peerjs.com',port:443,secure:true,path:'/',config:{iceServers:ICE,iceCandidatePoolSize:10}})
+    PEER.on('open',id=>{
+      setP2P('on','Ready · '+id.slice(0,8)+'...')
+      CONNS.forEach(c=>{ const tid='pc_'+c.publicKey.slice(8,24); pjConn(PEER.connect(tid,{reliable:true})) })
+      initBC()
+    })
+    PEER.on('connection',conn=>pjConn(conn))
+    PEER.on('error',err=>{ if(err.type!=='peer-unavailable') setP2P('off','Error: '+err.type) })
+    PEER.on('disconnected',()=>{ setP2P('try','Reconnecting...'); PEER.reconnect() })
+  } catch(e) { setP2P('off','P2P unavailable') }
+}
+
+function pjConn(conn) {
+  conn.on('open',()=>{
+    PEER_CONNS[conn.peer]=conn; PEERS_N++
+    document.getElementById('ppeers').textContent=PEERS_N+' online'
+    banner(conn.peer.slice(0,8),'PeerJS')
+    conn.send(JSON.stringify({type:'sync',posts:POSTS.slice(0,20)}))
+  })
+  conn.on('data',raw=>{
+    try {
+      const m=JSON.parse(raw)
+      if (m.type==='post') rxPost(m.post,true)
+      if (m.type==='sync') (m.posts||[]).forEach(p=>rxPost(p,true))
+      if (m.type==='phone_linked') applyPhone(m)
+    } catch(e) {}
+  })
+  conn.on('close',()=>{ delete PEER_CONNS[conn.peer]; PEERS_N=Math.max(0,PEERS_N-1); document.getElementById('ppeers').textContent=PEERS_N>0?PEERS_N+' online':'' })
+}
+
+function initBC() {
+  try {
+    BC=new BroadcastChannel('pcs_'+K.publicKey.slice(8,16))
+    BC.onmessage=e=>{ const m=e.data; if(m?.type==='post')rxPost(m.post,false); if(m?.type==='phone_linked')applyPhone(m) }
+  } catch(e) {}
+}
+
+function broadcast(msg) {
+  const d=JSON.stringify(msg)
+  Object.values(PEER_CONNS).forEach(c=>{try{c.send(d)}catch(e){}})
+  try{if(BC)BC.postMessage(msg)}catch(e){}
+}
+
+async function rxPost(p,trusted) {
+  if (!p?.id||POSTS.find(x=>x.id===p.id)) return
+  POSTS.unshift({...p,trusted,time:ago(p.ts||Date.now())})
+  renderFeed(); await save()
+}
+
+function applyPhone(d) {
+  if(d.user) U=d.user
+  if(d.keys) K=d.keys
+  if(d.posts){ const ex=new Set(POSTS.map(p=>p.id)); POSTS=[...d.posts.filter(p=>!ex.has(p.id)),...POSTS].slice(0,200) }
+  if(d.conns){ const ex=new Set(CONNS.map(c=>c.publicKey)); CONNS=[...CONNS,...(d.conns||[]).filter(c=>!ex.has(c.publicKey))] }
+  save().then(()=>{ startApp(); banner('Phone','QR') })
+}
+
+function setP2P(st,txt) {
+  const d=document.getElementById('pdot'),l=document.getElementById('plbl')
+  if(d) d.className='pd '+(st==='on'?'on':st==='try'?'try':'off')
+  if(l) l.textContent=txt
+  const s=document.getElementById('sp2p'); if(s) s.textContent=txt
+}
+
+// ═══════════════════════════════════════
+// PC WAIT SCREEN
+// ═══════════════════════════════════════
+let _pcPeer=null
+
+async function initPCWait() {
+  const pid='pcw_'+hex(crypto.getRandomValues(new Uint8Array(8)))
+  // Generate QR with peer ID so phone can connect
+  const qrData=JSON.stringify({t:'pcw',peerId:pid,ts:Date.now()})
+  await new Promise(r=>setTimeout(r,200))
+  const el=document.getElementById('pc-qr')
+  el.innerHTML=''
+  try { new QRCode(el,{text:qrData,width:220,height:220,colorDark:'#000',colorLight:'#fff'}) }
+  catch(e) { el.textContent='Error generating QR' }
+
+  // Listen via PeerJS
+  _pcPeer=new Peer(pid,{host:'0.peerjs.com',port:443,secure:true,path:'/',config:{iceServers:ICE}})
+  _pcPeer.on('open',()=>{ document.getElementById('pc-status').textContent='Waiting for phone...' })
+  _pcPeer.on('connection',conn=>{
+    conn.on('data',raw=>{
+      try {
+        const m=JSON.parse(raw)
+        if (m.type==='phone_linked') {
+          document.getElementById('pc-dot').style.background='var(--g)'
+          document.getElementById('pc-status').textContent='✅ '+( m.user?.name||'Phone')+' connected!'
+          applyPhone(m)
+        }
+      } catch(e) {}
+    })
+  })
+  _pcPeer.on('error',err=>{ if(err.type!=='peer-unavailable') document.getElementById('pc-status').textContent='Error — refresh to retry' })
+
+  // Also BroadcastChannel for same browser
+  try {
+    const bc=new BroadcastChannel('pcs_pc_wait')
+    bc.onmessage=e=>{ if(e.data?.type==='phone_linked') applyPhone(e.data) }
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════
+// BACKUP
+// ═══════════════════════════════════════
+async function genBackup() {
+  const btn=event?.target; if(btn){btn.textContent='Generating...';btn.disabled=true}
+  try {
+    const payload=JSON.stringify({v:VER,t:Date.now(),user:U,pubKey:K?.publicKey,ts:TOTP_SEC,ton:TOTP_ON,posts:POSTS.slice(0,100),conns:CONNS})
+    document.getElementById('bkout').value=await enc(payload,K.privateKey)
+    const st=document.getElementById('bkst'); if(st){st.style.display='block';st.style.color='var(--g)';st.textContent='✅ Copy and paste on other device'}
+  } catch(e) { toast('⚠️ Failed') }
+  if(btn){btn.textContent='Generate';btn.disabled=false}
+}
+
+function cpyBackup() {
+  const v=document.getElementById('bkout')?.value; if(!v){toast('⚠️ Generate first');return}
+  navigator.clipboard.writeText(v).catch(()=>{document.getElementById('bkout').select();document.execCommand('copy')})
+  toast('📋 Copied!')
+}
+
+async function impBackup() {
+  const code=document.getElementById('bkin')?.value?.trim()
+  const pass=document.getElementById('bkpass')?.value?.trim()
+  const st=document.getElementById('bkst')
+  if(!code){toast('⚠️ Paste a backup code');return}
+  if(!pass){toast('⚠️ Enter your passphrase');return}
+  if(!code.startsWith('PC1:')){toast('⚠️ Invalid format');return}
+  if(st){st.style.display='block';st.style.color='var(--y)';st.textContent='🔑 Decrypting...'}
+  try {
+    const dk=await deriveKeys(pass)
+    const plain=await dec(code,dk.privateKey)
+    if(!plain){if(st){st.style.color='var(--r)';st.textContent='✗ Wrong passphrase'}return}
+    const d=JSON.parse(plain)
+    if(d.pubKey&&d.pubKey!==dk.publicKey){if(st){st.style.color='var(--r)';st.textContent='✗ Passphrase does not match this backup'}return}
+    K=dk; if(d.user)U=d.user
+    if(d.ts){TOTP_SEC=d.ts;TOTP_ON=d.ton||false;TOTP=new OTPAuth.TOTP({issuer:APP,label:U?.handle||'user',algorithm:'SHA1',digits:6,period:30,secret:OTPAuth.Secret.fromBase32(d.ts)})}
+    if(d.posts){const ex=new Set(POSTS.map(p=>p.id));POSTS=[...d.posts.filter(p=>!ex.has(p.id)),...POSTS].slice(0,200)}
+    if(d.conns){const ex=new Set(CONNS.map(c=>c.publicKey));CONNS=[...CONNS,...(d.conns||[]).filter(c=>!ex.has(c.publicKey))]}
+    await save()
+    if(st){st.style.color='var(--g)';st.textContent='✅ Imported! '+POSTS.length+' posts'}
+    setTimeout(()=>{closeM('backup');startApp();toast('✅ Restored! Welcome, '+U?.name)},800)
+  } catch(e){if(st){st.style.color='var(--r)';st.textContent='✗ Import failed'}}
+}
+
+// ═══════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════
+function openSettings() {
+  const sp=document.getElementById('sp2p'); if(sp)sp.textContent=PEERS_N>0?PEERS_N+' peer(s) online':'No peers online'
+  const ss=document.getElementById('sstore'); if(ss) navigator.storage?.estimate().then(e=>{ss.textContent='IndexedDB · '+Math.round((e.usage||0)/1024)+'KB'}).catch(()=>{})
+}
+
+function signOut() {
+  if(!confirm('Sign out?')) return
+  sessionStorage.clear(); indexedDB.deleteDatabase(DB_NAME); location.reload()
+}
+
+// ═══════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════
+function openM(name) {
+  const el=document.getElementById('m-'+name); if(!el)return
+  el.classList.add('open')
+  if(name==='scan') setTimeout(startScan,300)
+  if(name==='mykey') openMyKey()
+  if(name==='settings') openSettings()
+  if(name==='mirror') setTimeout(startMirrorScan,300)
+  if(name==='backup'){const s=document.getElementById('bkst');if(s)s.style.display='none';const o=document.getElementById('bkout');if(o)o.value=''}
+}
+
+function closeM(name) {
+  const el=document.getElementById('m-'+name); if(el)el.classList.remove('open')
+  if(name==='scan') stopScan()
+  if(name==='mirror'){if(_mirrorScanner)_mirrorScanner.stop().catch(()=>{})}
+}
+
+document.querySelectorAll('.ov').forEach(o=>{
+  o.addEventListener('click',e=>{if(e.target===o){const n=o.id.replace('m-','');closeM(n)}})
+})
+
+// ═══════════════════════════════════════
+// BANNER + TOAST
+// ═══════════════════════════════════════
+function banner(id,layer) {
+  const ex=document.getElementById('cb'); if(ex)ex.remove()
+  const b=document.createElement('div'); b.id='cb'
+  b.style.cssText='position:fixed;top:0;left:0;right:0;background:var(--g);color:#08080f;padding:14px;text-align:center;font-family:Syne,sans-serif;font-weight:800;font-size:.9rem;z-index:9997;animation:sd .3s ease;cursor:pointer;'
+  b.innerHTML='🔗 CONNECTED via '+layer+'<br><span style="font-size:.7rem;font-weight:400;opacity:.8;">'+id+' · tap to dismiss</span>'
+  b.onclick=()=>b.remove(); document.body.appendChild(b)
+  if(navigator.vibrate)navigator.vibrate([100,50,100])
+  setTimeout(()=>{if(document.getElementById('cb'))b.remove()},6000)
+}
+
+let _tt
+function toast(msg) {
+  const e=document.getElementById('toast')
+  e.textContent=msg; e.classList.add('show')
+  clearTimeout(_tt); _tt=setTimeout(()=>e.classList.remove('show'),3500)
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function ago(ts) {
+  const s=Math.floor((Date.now()-ts)/1000)
+  if(s<60)return 'just now'; if(s<3600)return Math.floor(s/60)+'m ago'
+  if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'
+}
+function isMob() { return /android|iphone|ipad|ipod/i.test(navigator.userAgent)||window.innerWidth<768 }
+
+// ═══════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async () => {
+  const ok = await load()
+  if (ok && U) {
+    // Session restore (survives refresh)
+    try {
+      const c=JSON.parse(sessionStorage.getItem('pcs_k')||'null')
+      if (c?.privateKey&&c?.publicKey) { K=c; startApp(); return }
+    } catch(e) {}
+    resetLogin(); show('s-login')
+  } else {
+    if (isMob()) show('s-ob')
+    else { show('s-pc'); setTimeout(initPCWait,300) }
+  }
+})
+</script>
+</body>
+</html>
